@@ -1,0 +1,27 @@
+[package]
+name = "simpleshot"
+version = "0.0.34"
+description = "SimpleSHOT - macOS Screenshot App"
+authors = ["you"]
+edition = "2021"
+
+[lib]
+name = "simpleshot_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["macos-private-api", "tray-icon"] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-store = "2"
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "time", "process"] }
+base64 = "0.22"
+arboard = "3"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+dirs-next = "2"
