@@ -81,6 +81,9 @@ async fn capture_region(
     if let Some(win) = app.get_webview_window("overlay") {
         let _ = win.hide();
     }
+    if let Some(editor) = app.get_webview_window("editor") {
+        let _ = editor.hide();
+    }
     let path = capture::capture_region(x, y, width, height, show_cursor).await?;
     let (b64, w, h) = capture::load_as_base64(&path)?;
     open_editor_with_image(&app, b64, w, h);
@@ -92,6 +95,9 @@ async fn do_capture_fullscreen(app: AppHandle, state: State<'_, AppState>) -> Re
     let show_cursor = state.settings.lock().unwrap_or_else(|e| e.into_inner()).show_cursor;
     if let Some(win) = app.get_webview_window("overlay") {
         let _ = win.hide();
+    }
+    if let Some(editor) = app.get_webview_window("editor") {
+        let _ = editor.hide();
     }
     let path = capture::capture_fullscreen(show_cursor).await?;
     let (b64, w, h) = capture::load_as_base64(&path)?;
@@ -109,6 +115,9 @@ async fn capture_window_by_id(app: AppHandle, state: State<'_, AppState>, window
     let show_cursor = state.settings.lock().unwrap_or_else(|e| e.into_inner()).show_cursor;
     if let Some(win) = app.get_webview_window("overlay") {
         let _ = win.hide();
+    }
+    if let Some(editor) = app.get_webview_window("editor") {
+        let _ = editor.hide();
     }
     let path = capture::capture_window_by_id(window_id, show_cursor).await?;
     let (b64, w, h) = capture::load_as_base64(&path)?;
@@ -225,6 +234,10 @@ fn fit_overlay_to_screen(app: &AppHandle, win: &tauri::WebviewWindow) {
 
 /// 統合オーバーレイを表示する
 pub async fn trigger_capture(app: &AppHandle) {
+    // エディタが表示中なら隠す（スクショに写り込み防止）
+    if let Some(editor) = app.get_webview_window("editor") {
+        let _ = editor.hide();
+    }
     if let Some(win) = app.get_webview_window("overlay") {
         fit_overlay_to_screen(app, &win);
         let _ = win.show();
