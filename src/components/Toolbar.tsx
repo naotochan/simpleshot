@@ -155,6 +155,8 @@ interface ToolbarProps {
   onBgEnabledChange: (v: boolean) => void;
   onBgColorChange: (c: string) => void;
   onBgPaddingChange: (p: number) => void;
+  cornerRadius: number;
+  onCornerRadiusChange: (r: number) => void;
   onUndo: () => void;
   onRedo: () => void;
   onCopy: () => void;
@@ -190,6 +192,8 @@ const Toolbar = memo(function Toolbar({
   onBgEnabledChange,
   onBgColorChange,
   onBgPaddingChange,
+  cornerRadius,
+  onCornerRadiusChange,
   onUndo,
   onRedo,
   onCopy,
@@ -482,6 +486,20 @@ const Toolbar = memo(function Toolbar({
             </div>
           </>
         )}
+
+        <div className="w-px h-4 bg-gray-700 mx-1" />
+
+        {/* 角丸 */}
+        <span className="text-gray-500 text-xs">角丸</span>
+        <input
+          type="range"
+          min={0}
+          max={60}
+          value={cornerRadius}
+          onChange={(e) => onCornerRadiusChange(Number(e.target.value))}
+          className="w-20 accent-blue-500"
+        />
+        <span className="text-gray-400 text-xs w-6 text-right">{cornerRadius}</span>
       </div>
     </div>
   );
