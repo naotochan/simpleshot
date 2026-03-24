@@ -62,6 +62,7 @@ export default function Editor() {
   } | null>(null);
   const [imageFormat, setImageFormat] = useState<"png" | "jpeg">("png");
   const [favoriteColors, setFavoriteColors] = useState<string[]>([]);
+  const [cornerRadius, setCornerRadius] = useState(0);
   const [isPickingColor, setIsPickingColor] = useState(false);
   const [hoverColor, setHoverColor] = useState<string | null>(null);
   const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
@@ -556,8 +557,22 @@ export default function Editor() {
     if (!bgEnabled) {
       out.width = imgC.width;
       out.height = imgC.height;
+      // JPEG + 角丸の場合、透過部分が黒くなるので白で塗りつぶす
+      if (cornerRadius > 0 && imageFormat === "jpeg") {
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, out.width, out.height);
+      }
+      if (cornerRadius > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(0, 0, imgC.width, imgC.height, cornerRadius);
+        ctx.clip();
+      }
       ctx.drawImage(imgC, 0, 0);
       ctx.drawImage(annC, 0, 0);
+      if (cornerRadius > 0) {
+        ctx.restore();
+      }
     } else {
       const pad = bgPadding;
       out.width = imgC.width + pad * 2;
@@ -568,14 +583,17 @@ export default function Editor() {
       ctx.fillRect(0, 0, out.width, out.height);
 
       // スクショを角丸でクリップして描画
-      const r = 8;
-      ctx.save();
-      ctx.beginPath();
-      ctx.roundRect(pad, pad, imgC.width, imgC.height, r);
-      ctx.clip();
+      if (cornerRadius > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(pad, pad, imgC.width, imgC.height, cornerRadius);
+        ctx.clip();
+      }
       ctx.drawImage(imgC, pad, pad);
       ctx.drawImage(annC, pad, pad);
-      ctx.restore();
+      if (cornerRadius > 0) {
+        ctx.restore();
+      }
     }
     return out;
   };
@@ -649,6 +667,8 @@ export default function Editor() {
         onBgEnabledChange={setBgEnabled}
         onBgColorChange={setBgColor}
         onBgPaddingChange={setBgPadding}
+        cornerRadius={cornerRadius}
+        onCornerRadiusChange={setCornerRadius}
         onUndo={handleUndo}
         onRedo={handleRedo}
         onCopy={handleCopy}
@@ -683,7 +703,7 @@ export default function Editor() {
             style={{
               background: bgEnabled ? bgColor : "transparent",
               padding: pad,
-              borderRadius: bgEnabled ? 16 : 0,
+              borderRadius: bgEnabled ? Math.max(cornerRadius, 8) + 8 : cornerRadius,
               lineHeight: 0,
               boxShadow: bgEnabled ? "0 8px 40px rgba(0,0,0,0.5)" : "0 4px 32px rgba(0,0,0,0.4)",
               transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})`,
@@ -695,7 +715,7 @@ export default function Editor() {
               className="relative"
               style={{
                 lineHeight: 0,
-                borderRadius: bgEnabled ? 8 : 0,
+                borderRadius: cornerRadius,
                 overflow: "hidden",
               }}
             >
