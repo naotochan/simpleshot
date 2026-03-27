@@ -646,7 +646,7 @@ export default function Editor() {
   const pad = bgEnabled ? bgPadding : 0;
 
   return (
-    <div className="flex flex-col h-screen bg-gray-900 select-none">
+    <div className="flex flex-col h-screen bg-tb-base select-none">
       <Toolbar
         currentTool={currentTool}
         currentColor={currentColor}
@@ -687,7 +687,7 @@ export default function Editor() {
       {/* キャンバスエリア */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-hidden flex items-center justify-center bg-gray-800"
+        className="flex-1 overflow-hidden flex items-center justify-center bg-[#0F1015]"
         style={{ minHeight: 0, cursor: spaceHeld || isPanning ? "grab" : undefined }}
         onWheel={handleWheel}
         onMouseDown={handleContainerMouseDown}
@@ -696,7 +696,7 @@ export default function Editor() {
         onMouseLeave={handleContainerMouseUp}
       >
         {!imageData ? (
-          <div className="text-gray-400 text-sm">{status}</div>
+          <div className="text-tb-text-dim text-sm">{status}</div>
         ) : (
           /* 背景コンテナ */
           <div
@@ -756,22 +756,22 @@ export default function Editor() {
       {/* スポイト カラープレビュー */}
       {isPickingColor && hoverColor && (
         <div
-          className="fixed pointer-events-none z-50 flex items-center gap-2 bg-gray-900 text-white text-xs px-2 py-1.5 rounded shadow-lg border border-gray-600"
+          className="fixed pointer-events-none z-50 flex items-center gap-2 bg-tb-raised text-tb-text text-[11px] px-2.5 py-1.5 rounded-lg shadow-lg border border-tb-border"
           style={{ left: hoverPos.x + 18, top: hoverPos.y - 10 }}
         >
-          <div className="w-4 h-4 rounded-sm border border-gray-500 flex-shrink-0" style={{ backgroundColor: hoverColor }} />
+          <div className="w-4 h-4 rounded-sm border border-tb-border flex-shrink-0" style={{ backgroundColor: hoverColor }} />
           <span className="font-mono">{hoverColor}</span>
         </div>
       )}
 
       {/* ステータスバー */}
-      <div className="px-4 py-1.5 text-xs text-gray-400 bg-gray-900 border-t border-gray-700">
-        {status}
+      <div className="flex items-center justify-between px-4 py-2 text-[11px] bg-tb-base border-t border-tb-border">
+        <span className="text-tb-text-sub">{status}</span>
         {imgSize.w > 0 && (
-          <>
-            <span className="ml-4">{imgSize.w} × {imgSize.h}px</span>
-            <span className="ml-4">{Math.round(zoom * 100)}%</span>
-          </>
+          <div className="flex items-center gap-3 text-tb-text-dim font-mono tabular-nums">
+            <span>{imgSize.w} <span className="opacity-40">x</span> {imgSize.h}</span>
+            <span className="bg-tb-raised rounded px-1.5 py-0.5 text-tb-text-sub">{Math.round(zoom * 100)}%</span>
+          </div>
         )}
       </div>
     </div>
