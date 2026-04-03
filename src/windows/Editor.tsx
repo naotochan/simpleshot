@@ -687,7 +687,7 @@ export default function Editor() {
       {/* キャンバスエリア */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-hidden flex items-center justify-center bg-[#0F1015]"
+        className="flex-1 overflow-hidden flex items-center justify-center bg-tb-canvas"
         style={{ minHeight: 0, cursor: spaceHeld || isPanning ? "grab" : undefined }}
         onWheel={handleWheel}
         onMouseDown={handleContainerMouseDown}

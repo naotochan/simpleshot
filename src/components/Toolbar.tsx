@@ -471,7 +471,7 @@ const Toolbar = memo(function Toolbar({
                         : "text-tb-text-dim hover:text-tb-text-sub hover:bg-tb-hover"
                     }`}
                   >
-                    {p}
+                    {p === 0 ? "なし" : p}
                   </button>
                 ))}
               </div>

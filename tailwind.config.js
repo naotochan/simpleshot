@@ -14,6 +14,7 @@ export default {
           text: "#E8E9ED",
           "text-sub": "#8B8FA3",
           "text-dim": "#5C6078",
+          canvas: "#0F1015",
         },
       },
       fontFamily: {
