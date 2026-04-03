@@ -29,3 +29,80 @@ body,
   background: rgba(0, 0, 0, 0.2);
   border-radius: 3px;
 }
+
+/* ツールグループ コンテナ */
+.tool-group {
+  @apply flex items-center gap-0.5 bg-tb-raised border border-tb-border/50 rounded-xl;
+  padding: 3px 5px;
+}
+
+/* カスタムレンジスライダー
+   色値は tailwind.config.js の tb-* トークンと対応:
+   トラック bg = tb-border (#2A2C3A), サム bg = tb-text (#E8E9ED), サム border = blue-500 (#3B82F6) */
+.slider-tb {
+  @apply bg-tb-border;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.slider-tb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: theme("colors.tb.text");
+  border: 2px solid theme("colors.blue.500");
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.slider-tb::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.slider-tb::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+}
+
+/* BG トグルスイッチ
+   色値: off = tb-border (#2A2C3A), on = blue-500 (#3B82F6), knob = tb-text (#E8E9ED) */
+.toggle-switch {
+  @apply bg-tb-border flex-shrink-0;
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s ease;
+}
+
+.toggle-switch[data-on="true"] {
+  background: theme("colors.blue.500");
+}
+
+.toggle-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: theme("colors.tb.text");
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.toggle-switch[data-on="true"]::after {
+  transform: translateX(16px);
+}
