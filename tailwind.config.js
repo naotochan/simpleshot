@@ -15,6 +15,10 @@ export default {
           "text-sub": "#8B8FA3",
           "text-dim": "#5C6078",
           canvas: "#0F1015",
+          /* semantic tokens */
+          selected: "#3B82F6",
+          success: "#10B981",
+          warning: "#FB923C",
         },
       },
       fontFamily: {
