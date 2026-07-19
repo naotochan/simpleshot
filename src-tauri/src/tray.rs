@@ -1,7 +1,7 @@
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::TrayIconBuilder,
-    AppHandle, Manager,
+    AppHandle,
 };
 
 pub fn setup_tray(app: &AppHandle) -> Result<(), tauri::Error> {
@@ -26,10 +26,7 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), tauri::Error> {
                 });
             }
             "settings" => {
-                if let Some(win) = app.get_webview_window("settings") {
-                    let _ = win.show();
-                    let _ = win.set_focus();
-                }
+                crate::show_settings_window(app);
             }
             "quit" => {
                 app.exit(0);
