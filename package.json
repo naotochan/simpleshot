@@ -1,7 +1,7 @@
 {
   "name": "simpleshot",
   "private": true,
-  "version": "0.0.46",
+  "version": "0.0.47",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,6 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-
   "dependencies": {
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-fs": "^2.4.5",
