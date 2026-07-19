@@ -3,7 +3,7 @@ mod config;
 mod tray;
 
 use std::sync::Mutex;
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 // macOS: アクセシビリティ権限チェック (CGEventTap に必要)
@@ -245,6 +245,13 @@ pub async fn trigger_capture(app: &AppHandle) {
     }
 }
 
+pub fn show_settings_window(app: &AppHandle) {
+    if let Some(win) = app.get_webview_window("settings") {
+        let _ = win.show();
+        let _ = win.set_focus();
+    }
+}
+
 // ============================================================
 // エントリポイント
 // ============================================================
@@ -253,7 +260,17 @@ pub async fn trigger_capture(app: &AppHandle) {
 pub fn run() {
     let settings = config::load_settings();
 
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default();
+
+    // 二重起動防止（他プラグインより先に登録）
+    #[cfg(any(target_os = "macos", windows, target_os = "linux"))]
+    {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_settings_window(app);
+        }));
+    }
+
+    builder
         .manage(AppState {
             settings: Mutex::new(settings),
         })
@@ -265,6 +282,14 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             {
                 app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            }
+
+            // タイトルバーにバージョンを表示（設定・エディタ）
+            let titled = format!("SimpleSHOT {}", env!("CARGO_PKG_VERSION"));
+            for label in ["settings", "editor"] {
+                if let Some(win) = app.get_webview_window(label) {
+                    let _ = win.set_title(&titled);
+                }
             }
 
             tray::setup_tray(&app.handle())?;
@@ -292,6 +317,18 @@ pub fn run() {
             open_system_preferences,
             open_accessibility_preferences,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            // macOS: Dock / Finder から再オープンされたとき設定を前面に
+            if let RunEvent::Reopen {
+                has_visible_windows,
+                ..
+            } = event
+            {
+                if !has_visible_windows {
+                    show_settings_window(app);
+                }
+            }
+        });
 }

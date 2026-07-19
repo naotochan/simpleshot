@@ -55,13 +55,13 @@ export default function Settings() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 select-none">
+    <div className="flex flex-col h-screen bg-tb-base select-none">
       {/* タイトルバー */}
       <div
-        className="flex items-center px-5 py-3 bg-white border-b border-gray-200"
+        className="flex items-center px-5 py-3 bg-tb-base border-b border-tb-border"
         data-tauri-drag-region
       >
-        <h1 className="text-base font-semibold text-gray-800">SimpleSHOT 設定</h1>
+        <h1 className="text-base font-semibold text-tb-text">SimpleSHOT 設定</h1>
       </div>
 
       {/* コンテンツ */}
@@ -71,40 +71,40 @@ export default function Settings() {
           {/* スクリーン録画 */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-700">スクリーン録画</p>
-              <p className="text-xs text-gray-500 mt-0.5">キャプチャに必要な権限です</p>
+              <p className="text-sm font-medium text-tb-text">スクリーン録画</p>
+              <p className="text-xs text-tb-text-sub mt-0.5">キャプチャに必要な権限です</p>
             </div>
             {hasPermission === null ? (
-              <span className="text-xs text-gray-400">確認中...</span>
+              <span className="text-xs text-tb-text-dim">確認中...</span>
             ) : hasPermission ? (
-              <span className="text-xs font-medium text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
+              <span className="text-xs font-medium text-emerald-400 bg-emerald-500/20 px-2.5 py-1 rounded-full">
                 許可済み ✓
               </span>
             ) : (
               <button
                 onClick={() => openSystemPreferences()}
-                className="text-xs font-medium text-white bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg transition-colors"
+                className="text-xs font-medium text-white bg-blue-500 hover:bg-blue-400 px-3 py-1.5 rounded-lg transition-colors"
               >
                 権限を付与...
               </button>
             )}
           </div>
           {/* アクセシビリティ（グローバルホットキー用） */}
-          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <div className="flex items-center justify-between pt-2 border-t border-tb-border/50">
             <div>
-              <p className="text-sm font-medium text-gray-700">アクセシビリティ</p>
-              <p className="text-xs text-gray-500 mt-0.5">グローバルホットキーに必要な権限です</p>
+              <p className="text-sm font-medium text-tb-text">アクセシビリティ</p>
+              <p className="text-xs text-tb-text-sub mt-0.5">グローバルホットキーに必要な権限です</p>
             </div>
             {hasAccessibility === null ? (
-              <span className="text-xs text-gray-400">確認中...</span>
+              <span className="text-xs text-tb-text-dim">確認中...</span>
             ) : hasAccessibility ? (
-              <span className="text-xs font-medium text-green-600 bg-green-50 px-2.5 py-1 rounded-full">
+              <span className="text-xs font-medium text-emerald-400 bg-emerald-500/20 px-2.5 py-1 rounded-full">
                 許可済み ✓
               </span>
             ) : (
               <button
                 onClick={() => openAccessibilityPreferences()}
-                className="text-xs font-medium text-white bg-orange-500 hover:bg-orange-400 px-3 py-1.5 rounded-lg transition-colors"
+                className="text-xs font-medium text-orange-400 bg-orange-500/15 hover:bg-orange-500/25 px-3 py-1.5 rounded-lg transition-colors"
               >
                 権限を付与...
               </button>
@@ -121,7 +121,7 @@ export default function Settings() {
               setSettings((s) => ({ ...s, hotkeys: { ...s.hotkeys, screenshot: v } }))
             }
           />
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-tb-text-dim mt-2">
             例: CmdOrCtrl+Shift+Space, Alt+1 など
           </p>
         </Section>
@@ -130,9 +130,9 @@ export default function Settings() {
         <Section title="保存設定">
           <div className="space-y-3">
             <div>
-              <label className="text-sm text-gray-700">デフォルト保存先</label>
+              <label className="text-sm text-tb-text">デフォルト保存先</label>
               <input
-                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-blue-400 bg-white"
+                className="mt-1 w-full px-3 py-2 rounded-lg border border-tb-border text-sm text-tb-text focus:outline-none focus:border-blue-500 bg-tb-base placeholder:text-tb-text-dim"
                 value={settings.save_directory}
                 onChange={(e) =>
                   setSettings((s) => ({ ...s, save_directory: e.target.value }))
@@ -141,9 +141,9 @@ export default function Settings() {
               />
             </div>
             <div>
-              <label className="text-sm text-gray-700">画像形式</label>
+              <label className="text-sm text-tb-text">画像形式</label>
               <select
-                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-blue-400 bg-white"
+                className="mt-1 w-full px-3 py-2 rounded-lg border border-tb-border text-sm text-tb-text focus:outline-none focus:border-blue-500 bg-tb-base"
                 value={settings.image_format}
                 onChange={(e) =>
                   setSettings((s) => ({ ...s, image_format: e.target.value as "png" | "jpeg" }))
@@ -153,39 +153,35 @@ export default function Settings() {
                 <option value="jpeg">JPEG</option>
               </select>
             </div>
-            <div className="flex items-center justify-between pt-1 border-t border-gray-100">
+            <div className="flex items-center justify-between pt-1 border-t border-tb-border/50">
               <div>
-                <p className="text-sm text-gray-700">カーソルを含める</p>
-                <p className="text-xs text-gray-500 mt-0.5">スクリーンショットにマウスカーソルを表示します</p>
+                <p className="text-sm text-tb-text">カーソルを含める</p>
+                <p className="text-xs text-tb-text-sub mt-0.5">スクリーンショットにマウスカーソルを表示します</p>
               </div>
               <button
+                className="toggle-switch"
+                role="switch"
+                aria-checked={settings.show_cursor}
+                aria-label="カーソルを含める"
+                data-on={settings.show_cursor ? "true" : "false"}
                 onClick={() => setSettings((s) => ({ ...s, show_cursor: !s.show_cursor }))}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                  settings.show_cursor ? "bg-blue-600" : "bg-gray-300"
-                }`}
-              >
-                <span
-                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                    settings.show_cursor ? "translate-x-4" : "translate-x-0.5"
-                  }`}
-                />
-              </button>
+              />
             </div>
           </div>
         </Section>
       </div>
 
       {/* フッター */}
-      <div className="px-6 py-4 border-t border-gray-200 bg-white flex items-center justify-end gap-3">
+      <div className="px-6 py-4 border-t border-tb-border bg-tb-base flex items-center justify-end gap-3">
         <button
           onClick={handleClose}
-          className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors"
+          className="px-4 py-2 rounded-lg text-sm text-tb-text-sub hover:bg-tb-hover hover:text-tb-text transition-colors"
         >
           キャンセル
         </button>
         <button
           onClick={handleSave}
-          className="px-4 py-2 rounded-lg text-sm text-white bg-blue-600 hover:bg-blue-500 transition-colors"
+          className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-400 transition-colors"
         >
           {saved ? "保存しました ✓" : "保存"}
         </button>
@@ -203,10 +199,10 @@ function Section({
 }) {
   return (
     <div>
-      <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+      <h2 className="text-xs font-semibold text-tb-text-sub uppercase tracking-wide mb-3">
         {title}
       </h2>
-      <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 space-y-3">
+      <div className="bg-tb-raised rounded-xl border border-tb-border px-4 py-3 space-y-3">
         {children}
       </div>
     </div>
@@ -224,9 +220,9 @@ function HotkeyRow({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-gray-700">{label}</span>
+      <span className="text-sm text-tb-text">{label}</span>
       <input
-        className="px-2 py-1 rounded border border-gray-200 text-sm font-mono text-gray-800 w-52 focus:outline-none focus:border-blue-400"
+        className="px-2 py-1 rounded border border-tb-border text-sm font-mono text-tb-text w-52 focus:outline-none focus:border-blue-500 bg-tb-base"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />

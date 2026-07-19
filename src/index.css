@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* tb-* トークン（tailwind.config.js と同期） */
+  --tb-base: #13141a;
+  --tb-raised: #1c1d27;
+  --tb-hover: #262836;
+  --tb-active: #2e3145;
+  --tb-border: #2a2c3a;
+  --tb-text: #e8e9ed;
+  --tb-text-sub: #8b8fa3;
+  --tb-text-dim: #5c6078;
+  --tb-canvas: #0f1015;
+  --tb-selected: #3b82f6;
+  --tb-success: #10b981;
+  --tb-warning: #fb923c;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -30,23 +46,40 @@ body,
   border-radius: 3px;
 }
 
+/* ツールバー横スクロール（overflow 時） */
+.toolbar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--tb-border) transparent;
+}
+.toolbar-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.toolbar-scroll::-webkit-scrollbar-thumb {
+  background: var(--tb-border);
+  border-radius: 2px;
+}
+
 /* ツールグループ コンテナ */
 .tool-group {
-  @apply flex items-center gap-0.5 bg-tb-raised border border-tb-border/50 rounded-xl;
+  @apply flex items-center gap-0.5 bg-tb-raised border border-tb-border/50 rounded-xl flex-shrink-0;
   padding: 3px 5px;
 }
 
-/* カスタムレンジスライダー
-   色値は tailwind.config.js の tb-* トークンと対応:
-   トラック bg = tb-border (#2A2C3A), サム bg = tb-text (#E8E9ED), サム border = blue-500 (#3B82F6) */
+/* カスタムレンジスライダー（thumb をトラック中央に） */
 .slider-tb {
-  @apply bg-tb-border;
   -webkit-appearance: none;
   appearance: none;
-  height: 4px;
-  border-radius: 2px;
+  width: 100%;
+  height: 14px;
+  background: transparent;
   outline: none;
   cursor: pointer;
+}
+
+.slider-tb::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--tb-border);
 }
 
 .slider-tb::-webkit-slider-thumb {
@@ -54,9 +87,10 @@ body,
   appearance: none;
   width: 14px;
   height: 14px;
+  margin-top: -5px; /* (14 - 4) / 2 */
   border-radius: 50%;
-  background: theme("colors.tb.text");
-  border: 2px solid theme("colors.blue.500");
+  background: var(--tb-text);
+  border: 2px solid var(--tb-selected);
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -67,13 +101,23 @@ body,
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.slider-tb::-webkit-slider-runnable-track {
+.slider-tb::-moz-range-track {
   height: 4px;
   border-radius: 2px;
+  background: var(--tb-border);
 }
 
-/* BG トグルスイッチ
-   色値: off = tb-border (#2A2C3A), on = blue-500 (#3B82F6), knob = tb-text (#E8E9ED) */
+.slider-tb::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--tb-text);
+  border: 2px solid var(--tb-selected);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* BG トグルスイッチ */
 .toggle-switch {
   @apply bg-tb-border flex-shrink-0;
   position: relative;
@@ -87,7 +131,7 @@ body,
 }
 
 .toggle-switch[data-on="true"] {
-  background: theme("colors.blue.500");
+  background: var(--tb-selected);
 }
 
 .toggle-switch::after {
@@ -98,7 +142,7 @@ body,
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: theme("colors.tb.text");
+  background: var(--tb-text);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.2s ease;
 }

@@ -1,6 +1,6 @@
 [package]
 name = "simpleshot"
-version = "0.0.38"
+version = "0.0.47"
 description = "SimpleSHOT - macOS Screenshot App"
 authors = ["you"]
 edition = "2021"
@@ -25,3 +25,6 @@ base64 = "0.22"
 arboard = "3"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 dirs-next = "2"
+
+[target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
+tauri-plugin-single-instance = "2.4.3"
