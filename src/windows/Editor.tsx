@@ -25,8 +25,6 @@ export default function Editor() {
     color: "#1e1e2e",
     padding: 40,
   });
-  const [drawing, setDrawing] = useState(false);
-  const [currentAnnotation, setCurrentAnnotation] = useState<Annotation | null>(null);
   const [pendingText, setPendingText] = useState<{ x: number; y: number } | null>(null);
   const [textInput, setTextInput] = useState("");
   const [status, setStatus] = useState("キャプチャを待っています...");
@@ -37,6 +35,12 @@ export default function Editor() {
   const [spaceHeld, setSpaceHeld] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
   const rafRef = useRef(0);
+  /** 確定済みアノテーションを保持（ドラッグ中はここから復元してプレビューだけ重ねる） */
+  const baseLayerRef = useRef<HTMLCanvasElement | null>(null);
+  const annotationsRef = useRef<Annotation[]>([]);
+  const drawingAnnRef = useRef<Annotation | null>(null);
+  const isDrawingRef = useRef(false);
+  const sizeMulRef = useRef(1);
   const [cropRegion, setCropRegion] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [cropDrawing, setCropDrawing] = useState(false);
   const [cropStart, setCropStart] = useState<Point | null>(null);
@@ -111,7 +115,7 @@ export default function Editor() {
     return () => { unlisten?.(); };
   }, []);
 
-  // 表示サイズだけ CSS で合わせる（キャンバス画素は元解像度のまま）
+  // フィット倍率だけ更新。CSS は常に 1:1（縮小を CSS と transform の二重にしない）
   const applyDisplaySize = useCallback((nativeW: number, nativeH: number) => {
     const container = containerRef.current;
     const imgCanvas = imageCanvasRef.current;
@@ -122,12 +126,11 @@ export default function Editor() {
     const maxW = Math.max(1, container.clientWidth - pad * 2 - 32);
     const maxH = Math.max(1, container.clientHeight - pad * 2 - 32);
     const fit = Math.min(1, maxW / nativeW, maxH / nativeH);
-    const dw = nativeW * fit;
-    const dh = nativeH * fit;
-    imgCanvas.style.width = `${dw}px`;
-    imgCanvas.style.height = `${dh}px`;
-    annCanvas.style.width = `${dw}px`;
-    annCanvas.style.height = `${dh}px`;
+    // 表示縮小は transform のみ。ここで CSS を縮めると拡大時に再サンプリングで粗くなる
+    imgCanvas.style.width = `${nativeW}px`;
+    imgCanvas.style.height = `${nativeH}px`;
+    annCanvas.style.width = `${nativeW}px`;
+    annCanvas.style.height = `${nativeH}px`;
     setScale(fit);
     return fit;
   }, [background.enabled, background.padding]);
@@ -172,25 +175,75 @@ export default function Editor() {
     return () => ro.disconnect();
   }, [background.enabled, background.padding, applyDisplaySize]);
 
-  // UI の size → 画像 native 画素（画面上の見た目 ≈ ツールバー値）
-  const sizeMul = scale > 0 ? 1 / scale : 1;
+  // 実効表示倍率（フィット × ユーザズーム）。UI の size → native 画素換算に使う
+  const displayScale = scale * zoom;
+  const sizeMul = displayScale > 0 ? 1 / displayScale : 1;
+  sizeMulRef.current = sizeMul;
+  annotationsRef.current = annotations;
 
-  // アノテーションを再描画（size は作成時に native へ焼き済み → scale=1）
-  const redrawAnnotations = useCallback(
+  const ensureBaseLayer = useCallback(() => {
+    const annCanvas = annotationCanvasRef.current;
+    if (!annCanvas) return null;
+    if (!baseLayerRef.current) baseLayerRef.current = document.createElement("canvas");
+    const base = baseLayerRef.current;
+    if (base.width !== annCanvas.width || base.height !== annCanvas.height) {
+      base.width = annCanvas.width;
+      base.height = annCanvas.height;
+    }
+    return base;
+  }, []);
+
+  // 確定済みアノテーションをベースレイヤへ（ドラッグ中の毎フレーム全再計算を避ける）
+  const rebuildBaseLayer = useCallback(
     (anns: Annotation[]) => {
-      const canvas = annotationCanvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (const ann of anns) drawAnnotation(ctx, ann, 1, imageCanvasRef.current);
+      const annCanvas = annotationCanvasRef.current;
+      const base = ensureBaseLayer();
+      if (!annCanvas || !base) return;
+      const bctx = base.getContext("2d");
+      const actx = annCanvas.getContext("2d");
+      if (!bctx || !actx) return;
+      bctx.clearRect(0, 0, base.width, base.height);
+      for (const ann of anns) drawAnnotation(bctx, ann, 1, imageCanvasRef.current);
+      actx.clearRect(0, 0, annCanvas.width, annCanvas.height);
+      actx.drawImage(base, 0, 0);
     },
-    []
+    [ensureBaseLayer]
   );
 
+  const paintDragPreview = useCallback((ann: Annotation) => {
+    const annCanvas = annotationCanvasRef.current;
+    const base = baseLayerRef.current ?? ensureBaseLayer();
+    if (!annCanvas || !base) return;
+    const ctx = annCanvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, annCanvas.width, annCanvas.height);
+    ctx.drawImage(base, 0, 0);
+
+    // モザイクはドラッグ中は枠だけ（本処理は mouseup で一度だけ）
+    if (ann.tool === "mosaic") {
+      const [s, e] = ann.points;
+      const x = Math.min(s.x, e.x);
+      const y = Math.min(s.y, e.y);
+      const w = Math.abs(e.x - s.x);
+      const h = Math.abs(e.y - s.y);
+      const mul = sizeMulRef.current;
+      ctx.save();
+      ctx.strokeStyle = "rgba(59, 130, 246, 0.95)";
+      ctx.fillStyle = "rgba(59, 130, 246, 0.1)";
+      ctx.lineWidth = Math.max(1, 2 * mul);
+      ctx.setLineDash([6 * mul, 4 * mul]);
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeRect(x, y, w, h);
+      ctx.restore();
+      return;
+    }
+    drawAnnotation(ctx, ann, 1, imageCanvasRef.current);
+  }, [ensureBaseLayer]);
+
   useEffect(() => {
-    redrawAnnotations(annotations);
-  }, [annotations, redrawAnnotations]);
+    if (isDrawingRef.current) return;
+    rebuildBaseLayer(annotations);
+  }, [annotations, rebuildBaseLayer]);
 
   // マウス座標 → 画像の native 画素座標
   const getPos = (e: React.MouseEvent): Point => {
@@ -229,15 +282,18 @@ export default function Editor() {
       return;
     }
     const pos = getPos(e);
-    setDrawing(true);
-    setCurrentAnnotation({
+    const ann: Annotation = {
       tool: currentTool,
       color: currentColor,
       size: currentSize * sizeMul,
       points: [pos, pos],
       arrowStyle: currentArrowStyle,
       filled: (currentTool === "rect" || currentTool === "ellipse") ? shapeFilled : undefined,
-    });
+    };
+    ensureBaseLayer();
+    isDrawingRef.current = true;
+    drawingAnnRef.current = ann;
+    paintDragPreview(ann);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -269,37 +325,33 @@ export default function Editor() {
       const w = Math.abs(pos.x - cropStart.x);
       const h = Math.abs(pos.y - cropStart.y);
       setCropRegion({ x, y, w, h });
-      redrawAnnotations(annotations);
       return;
     }
-    if (!drawing || !currentAnnotation) return;
+    if (!isDrawingRef.current || !drawingAnnRef.current) return;
     let pos = getPos(e);
+    const cur = drawingAnnRef.current;
 
     // Shift キーで正方形/真円に制約
-    if (e.shiftKey && (currentTool === "rect" || currentTool === "ellipse")) {
-      const start = currentAnnotation.points[0];
+    if (e.shiftKey && (cur.tool === "rect" || cur.tool === "ellipse")) {
+      const start = cur.points[0];
       const w = pos.x - start.x;
       const h = pos.y - start.y;
       const side = Math.max(Math.abs(w), Math.abs(h));
       pos = { x: start.x + side * Math.sign(w || 1), y: start.y + side * Math.sign(h || 1) };
     }
 
-    const updated = {
-      ...currentAnnotation,
+    const updated: Annotation = {
+      ...cur,
       points:
-        currentTool === "pen" || currentTool === "highlighter"
-          ? [...currentAnnotation.points, pos]
-          : [currentAnnotation.points[0], pos],
+        cur.tool === "pen" || cur.tool === "highlighter"
+          ? [...cur.points, pos]
+          : [cur.points[0], pos],
     };
-    setCurrentAnnotation(updated);
+    drawingAnnRef.current = updated;
+    // ドラッグ中は React state を更新しない（再レンダーで極端に重くなる）
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
-      const canvas = annotationCanvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      redrawAnnotations(annotations);
-      drawAnnotation(ctx, updated, 1, imageCanvasRef.current);
+      if (drawingAnnRef.current) paintDragPreview(drawingAnnRef.current);
     });
   };
 
@@ -313,23 +365,24 @@ export default function Editor() {
       setCropStart(null);
       return;
     }
-    if (!drawing || !currentAnnotation) return;
+    if (!isDrawingRef.current || !drawingAnnRef.current) return;
+    const cur = drawingAnnRef.current;
     const pos = getPos(e);
-    const finalAnn = {
-      ...currentAnnotation,
+    const finalAnn: Annotation = {
+      ...cur,
       points:
-        currentTool === "pen" || currentTool === "highlighter"
-          ? [...currentAnnotation.points, pos]
-          : [currentAnnotation.points[0], pos],
+        cur.tool === "pen" || cur.tool === "highlighter"
+          ? [...cur.points, pos]
+          : [cur.points[0], pos],
     };
-    const newAnnotations = [...annotations, finalAnn];
+    isDrawingRef.current = false;
+    drawingAnnRef.current = null;
+    const newAnnotations = [...annotationsRef.current, finalAnn];
     setAnnotations(newAnnotations);
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push(newAnnotations);
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
-    setDrawing(false);
-    setCurrentAnnotation(null);
   };
 
   const handleUndo = useCallback(() => {
@@ -474,7 +527,8 @@ export default function Editor() {
     setCropDrawing(false);
     setCropStart(null);
     setCurrentTool("arrow");
-  }, []);
+    rebuildBaseLayer(annotationsRef.current);
+  }, [rebuildBaseLayer]);
 
   // トリミングを元に戻す
   const handleCropRevert = useCallback(() => {
@@ -509,26 +563,31 @@ export default function Editor() {
   useEffect(() => {
     if (currentTool !== "crop" || !cropRegion) return;
     const canvas = annotationCanvasRef.current;
-    if (!canvas) return;
+    const base = baseLayerRef.current ?? ensureBaseLayer();
+    if (!canvas || !base) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // まず既存アノテーションを描画
-    redrawAnnotations(annotations);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(base, 0, 0);
 
     // 暗いマスク
     ctx.save();
     ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // 選択領域をクリア
+    // 選択領域をクリアしてベースを見せる
     ctx.clearRect(cropRegion.x, cropRegion.y, cropRegion.w, cropRegion.h);
-    // 選択領域内のアノテーションを再描画
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(cropRegion.x, cropRegion.y, cropRegion.w, cropRegion.h);
-    ctx.clip();
-    for (const ann of annotations) drawAnnotation(ctx, ann, 1, imageCanvasRef.current);
-    ctx.restore();
+    ctx.drawImage(
+      base,
+      cropRegion.x,
+      cropRegion.y,
+      cropRegion.w,
+      cropRegion.h,
+      cropRegion.x,
+      cropRegion.y,
+      cropRegion.w,
+      cropRegion.h
+    );
     // 枠線
     ctx.strokeStyle = "#3b82f6";
     ctx.lineWidth = 2 * sizeMul;
@@ -536,7 +595,7 @@ export default function Editor() {
     ctx.strokeRect(cropRegion.x, cropRegion.y, cropRegion.w, cropRegion.h);
     ctx.setLineDash([]);
     ctx.restore();
-  }, [cropRegion, currentTool, annotations, sizeMul, redrawAnnotations]);
+  }, [cropRegion, currentTool, annotations, sizeMul, ensureBaseLayer]);
 
   const handleTextSubmit = () => {
     if (!pendingText || !textInput.trim()) { setPendingText(null); return; }
@@ -759,11 +818,11 @@ export default function Editor() {
               borderRadius: background.enabled ? Math.max(cornerRadius, 8) + 8 : cornerRadius,
               lineHeight: 0,
               boxShadow: background.enabled ? "0 8px 40px rgba(0,0,0,0.5)" : "0 4px 32px rgba(0,0,0,0.4)",
-              transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})`,
+              transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${displayScale})`,
               transformOrigin: "center center",
             }}
           >
-            {/* スクショ + アノテーションレイヤー */}
+            {/* スクショ + アノテーションレイヤー（キャンバス CSS は native 1:1） */}
             <div
               className="relative"
               style={{
@@ -786,8 +845,8 @@ export default function Editor() {
                   autoFocus
                   className="absolute outline-none bg-transparent border-b border-blue-400"
                   style={{
-                    left: pendingText.x * scale,
-                    top: pendingText.y * scale,
+                    left: pendingText.x,
+                    top: pendingText.y,
                     fontSize: currentSize * 6 + 12,
                     color: currentColor,
                     minWidth: 80,
@@ -823,7 +882,7 @@ export default function Editor() {
         {imgSize.w > 0 && (
           <div className="flex items-center gap-3 text-tb-text-dim font-mono tabular-nums">
             <span>{imgSize.w} <span className="opacity-40">x</span> {imgSize.h}</span>
-            <span className="bg-tb-raised rounded px-1.5 py-0.5 text-tb-text-sub">{Math.round(zoom * scale * 100)}%</span>
+            <span className="bg-tb-raised rounded px-1.5 py-0.5 text-tb-text-sub">{Math.round(displayScale * 100)}%</span>
           </div>
         )}
       </div>

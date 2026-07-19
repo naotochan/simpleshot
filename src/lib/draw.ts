@@ -1,5 +1,16 @@
 import type { Annotation, Point } from "../types/annotation";
 
+/** モザイク用の再利用キャンバス（毎描画の createElement を避ける） */
+let mosaicTmp: HTMLCanvasElement | null = null;
+function getMosaicTmp(sw: number, sh: number): HTMLCanvasElement {
+  if (!mosaicTmp) mosaicTmp = document.createElement("canvas");
+  if (mosaicTmp.width !== sw || mosaicTmp.height !== sh) {
+    mosaicTmp.width = sw;
+    mosaicTmp.height = sh;
+  }
+  return mosaicTmp;
+}
+
 export function drawAnnotation(
   ctx: CanvasRenderingContext2D,
   ann: Annotation,
@@ -66,62 +77,73 @@ export function drawAnnotation(
       break;
     case "mosaic": {
       if (!imageCanvas) break;
-      const imgCtx = imageCanvas.getContext("2d");
-      if (!imgCtx) break;
       const mx = Math.round(Math.min(start.x, end.x));
       const my = Math.round(Math.min(start.y, end.y));
       const mw = Math.round(Math.abs(end.x - start.x));
       const mh = Math.round(Math.abs(end.y - start.y));
       if (mw < 2 || mh < 2) break;
-      const blockSize = Math.max(4, ann.size * 4);
-      const imgData = imgCtx.getImageData(mx, my, mw, mh);
-      for (let bx = 0; bx < mw; bx += blockSize) {
-        for (let by = 0; by < mh; by += blockSize) {
-          const bw = Math.min(blockSize, mw - bx);
-          const bh = Math.min(blockSize, mh - by);
-          let r = 0, g = 0, b = 0, count = 0;
-          for (let px = 0; px < bw; px++) {
-            for (let py = 0; py < bh; py++) {
-              const idx = ((by + py) * mw + (bx + px)) * 4;
-              r += imgData.data[idx];
-              g += imgData.data[idx + 1];
-              b += imgData.data[idx + 2];
-              count++;
-            }
-          }
-          ctx.fillStyle = `rgb(${Math.round(r / count)},${Math.round(g / count)},${Math.round(b / count)})`;
-          ctx.fillRect(mx + bx, my + by, bw, bh);
-        }
-      }
+      // ann.size は native 画素。ブロックは見た目のモザイク感が出る範囲に収める
+      const block = Math.max(8, Math.min(64, Math.round(ann.size * 2.5)));
+      const sw = Math.max(1, Math.round(mw / block));
+      const sh = Math.max(1, Math.round(mh / block));
+      // 縮小 → 拡大（スムージング OFF）で一般的なピクセルモザイクにする
+      const tmp = getMosaicTmp(sw, sh);
+      const tctx = tmp.getContext("2d");
+      if (!tctx) break;
+      tctx.imageSmoothingEnabled = false;
+      tctx.clearRect(0, 0, sw, sh);
+      tctx.drawImage(imageCanvas, mx, my, mw, mh, 0, 0, sw, sh);
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(tmp, 0, 0, sw, sh, mx, my, mw, mh);
+      ctx.restore();
       break;
     }
   }
   ctx.restore();
 }
 
-/** 均一な太さの矢印 */
+/** 均一な太さの矢印（丸い根元 + 塗りつぶし矢じり） */
 export function drawUniformArrow(ctx: CanvasRenderingContext2D, from: Point, to: Point, lw: number) {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const len = Math.sqrt(dx * dx + dy * dy);
   if (len < 2) return;
-  const angle = Math.atan2(dy, dx);
-  const headLen = Math.min(20, len * 0.4) + lw * 2;
 
+  const angle = Math.atan2(dy, dx);
+  const headLen = Math.min(len * 0.4, lw * 5 + 12);
+  const headHalf = lw * 2.2 + 2;
+  // 軸は矢じりの根元手前で止め、線が先端を突き抜けないようにする
+  const shaftEnd = {
+    x: to.x - Math.cos(angle) * headLen * 0.78,
+    y: to.y - Math.sin(angle) * headLen * 0.78,
+  };
+
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.lineWidth = lw;
   ctx.beginPath();
   ctx.moveTo(from.x, from.y);
-  ctx.lineTo(to.x, to.y);
+  ctx.lineTo(shaftEnd.x, shaftEnd.y);
   ctx.stroke();
 
   ctx.beginPath();
   ctx.moveTo(to.x, to.y);
-  ctx.lineTo(to.x - headLen * Math.cos(angle - Math.PI / 6), to.y - headLen * Math.sin(angle - Math.PI / 6));
-  ctx.moveTo(to.x, to.y);
-  ctx.lineTo(to.x - headLen * Math.cos(angle + Math.PI / 6), to.y - headLen * Math.sin(angle + Math.PI / 6));
-  ctx.stroke();
+  ctx.lineTo(
+    to.x - headLen * Math.cos(angle) + headHalf * Math.sin(angle),
+    to.y - headLen * Math.sin(angle) - headHalf * Math.cos(angle)
+  );
+  ctx.lineTo(
+    to.x - headLen * Math.cos(angle) - headHalf * Math.sin(angle),
+    to.y - headLen * Math.sin(angle) + headHalf * Math.cos(angle)
+  );
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 }
 
-/** テーパー矢印（根元が細く先端に向かって太くなる、塗りつぶし、尖った先端） */
+/** テーパー矢印（丸い根元、先端に向かって太くなる） */
 export function drawTaperedArrow(ctx: CanvasRenderingContext2D, from: Point, to: Point, lw: number) {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
@@ -130,18 +152,21 @@ export function drawTaperedArrow(ctx: CanvasRenderingContext2D, from: Point, to:
 
   const nx = -dy / len;
   const ny = dx / len;
-  const headLen = Math.min(20, len * 0.35) + lw * 2;
-
   const cosA = dx / len;
   const sinA = dy / len;
+
+  const headLen = Math.min(len * 0.42, lw * 4.8 + 10);
   const shaftEnd = {
     x: to.x - headLen * cosA,
     y: to.y - headLen * sinA,
   };
 
-  const startW = Math.max(1, lw * 0.5);
-  const endW = lw * 1.5;
-  const headW = lw * 3.0;
+  const startW = Math.max(lw * 0.45, 1.5);
+  const endW = lw * 1.2;
+  const headW = lw * 2.6;
+
+  const a1 = Math.atan2(ny, nx);
+  const a2 = Math.atan2(-ny, -nx);
 
   ctx.save();
   ctx.lineJoin = "miter";
@@ -154,6 +179,8 @@ export function drawTaperedArrow(ctx: CanvasRenderingContext2D, from: Point, to:
   ctx.lineTo(shaftEnd.x - nx * headW, shaftEnd.y - ny * headW);
   ctx.lineTo(shaftEnd.x - nx * endW, shaftEnd.y - ny * endW);
   ctx.lineTo(from.x - nx * startW, from.y - ny * startW);
+  // 根元は半円（先端側ではなくお尻側を通る）
+  ctx.arc(from.x, from.y, startW, a2, a1, true);
   ctx.closePath();
   ctx.fill();
   ctx.restore();

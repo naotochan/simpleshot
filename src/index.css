@@ -65,15 +65,21 @@ body,
   padding: 3px 5px;
 }
 
-/* カスタムレンジスライダー */
+/* カスタムレンジスライダー（thumb をトラック中央に） */
 .slider-tb {
-  @apply bg-tb-border;
   -webkit-appearance: none;
   appearance: none;
-  height: 4px;
-  border-radius: 2px;
+  width: 100%;
+  height: 14px;
+  background: transparent;
   outline: none;
   cursor: pointer;
+}
+
+.slider-tb::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--tb-border);
 }
 
 .slider-tb::-webkit-slider-thumb {
@@ -81,6 +87,7 @@ body,
   appearance: none;
   width: 14px;
   height: 14px;
+  margin-top: -5px; /* (14 - 4) / 2 */
   border-radius: 50%;
   background: var(--tb-text);
   border: 2px solid var(--tb-selected);
@@ -94,9 +101,20 @@ body,
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-.slider-tb::-webkit-slider-runnable-track {
+.slider-tb::-moz-range-track {
   height: 4px;
   border-radius: 2px;
+  background: var(--tb-border);
+}
+
+.slider-tb::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--tb-text);
+  border: 2px solid var(--tb-selected);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 /* BG トグルスイッチ */
