@@ -111,7 +111,28 @@ export default function Editor() {
     return () => { unlisten?.(); };
   }, []);
 
-  // 画像を imageCanvas に描画
+  // 表示サイズだけ CSS で合わせる（キャンバス画素は元解像度のまま）
+  const applyDisplaySize = useCallback((nativeW: number, nativeH: number) => {
+    const container = containerRef.current;
+    const imgCanvas = imageCanvasRef.current;
+    const annCanvas = annotationCanvasRef.current;
+    if (!container || !imgCanvas || !annCanvas || nativeW <= 0 || nativeH <= 0) return 1;
+
+    const pad = background.enabled ? background.padding : 0;
+    const maxW = Math.max(1, container.clientWidth - pad * 2 - 32);
+    const maxH = Math.max(1, container.clientHeight - pad * 2 - 32);
+    const fit = Math.min(1, maxW / nativeW, maxH / nativeH);
+    const dw = nativeW * fit;
+    const dh = nativeH * fit;
+    imgCanvas.style.width = `${dw}px`;
+    imgCanvas.style.height = `${dh}px`;
+    annCanvas.style.width = `${dw}px`;
+    annCanvas.style.height = `${dh}px`;
+    setScale(fit);
+    return fit;
+  }, [background.enabled, background.padding]);
+
+  // 画像を元解像度のまま imageCanvas に描画
   useEffect(() => {
     if (!imageData || !imageCanvasRef.current) return;
     const canvas = imageCanvasRef.current;
@@ -120,41 +141,41 @@ export default function Editor() {
 
     const img = new Image();
     img.onload = () => {
-      const container = containerRef.current;
-      if (!container) return;
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, 0, 0);
 
-      const pad = background.enabled ? background.padding : 0;
-      const maxW = container.clientWidth - pad * 2 - 32;
-      const maxH = container.clientHeight - pad * 2 - 32;
-      const scaleX = maxW / img.width;
-      const scaleY = maxH / img.height;
-      const s = Math.min(1, scaleX, scaleY);
-
-      const prevW = canvas.width;
-      const prevH = canvas.height;
-      const newW = img.width * s;
-      const newH = img.height * s;
-
-      setScale(s);
-      canvas.width = newW;
-      canvas.height = newH;
-      ctx.drawImage(img, 0, 0, newW, newH);
-
-      // サイズが変わった場合のみアノテーション canvas をリサイズ
       const annCanvas = annotationCanvasRef.current!;
-      if (Math.round(prevW) !== Math.round(newW) || Math.round(prevH) !== Math.round(newH)) {
-        // 既存のアノテーション描画を一時保存
-        const annCtx = annCanvas.getContext("2d")!;
-        const annImageData = annCtx.getImageData(0, 0, annCanvas.width, annCanvas.height);
-        annCanvas.width = newW;
-        annCanvas.height = newH;
-        annCtx.putImageData(annImageData, 0, 0);
+      if (annCanvas.width !== img.width || annCanvas.height !== img.height) {
+        annCanvas.width = img.width;
+        annCanvas.height = img.height;
       }
+      applyDisplaySize(img.width, img.height);
+      setImgSize({ w: img.width, h: img.height });
     };
     img.src = imageData;
-  }, [imageData, background.enabled, background.padding]);
+  }, [imageData, applyDisplaySize]);
 
-  // アノテーションを再描画
+  // 背景パディングやコンテナサイズ変更時は表示スケールだけ更新
+  useEffect(() => {
+    const imgCanvas = imageCanvasRef.current;
+    if (!imgCanvas?.width) return;
+    applyDisplaySize(imgCanvas.width, imgCanvas.height);
+
+    const container = containerRef.current;
+    if (!container || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      if (imgCanvas.width) applyDisplaySize(imgCanvas.width, imgCanvas.height);
+    });
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [background.enabled, background.padding, applyDisplaySize]);
+
+  // UI の size → 画像 native 画素（画面上の見た目 ≈ ツールバー値）
+  const sizeMul = scale > 0 ? 1 / scale : 1;
+
+  // アノテーションを再描画（size は作成時に native へ焼き済み → scale=1）
   const redrawAnnotations = useCallback(
     (anns: Annotation[]) => {
       const canvas = annotationCanvasRef.current;
@@ -162,20 +183,24 @@ export default function Editor() {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (const ann of anns) drawAnnotation(ctx, ann, scale, imageCanvasRef.current);
+      for (const ann of anns) drawAnnotation(ctx, ann, 1, imageCanvasRef.current);
     },
-    [scale]
+    []
   );
 
   useEffect(() => {
     redrawAnnotations(annotations);
   }, [annotations, redrawAnnotations]);
 
-  // マウスイベント
+  // マウス座標 → 画像の native 画素座標
   const getPos = (e: React.MouseEvent): Point => {
     const canvas = annotationCanvasRef.current!;
     const rect = canvas.getBoundingClientRect();
-    return { x: (e.clientX - rect.left) / zoom, y: (e.clientY - rect.top) / zoom };
+    if (rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
+    return {
+      x: ((e.clientX - rect.left) / rect.width) * canvas.width,
+      y: ((e.clientY - rect.top) / rect.height) * canvas.height,
+    };
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -208,7 +233,7 @@ export default function Editor() {
     setCurrentAnnotation({
       tool: currentTool,
       color: currentColor,
-      size: currentSize,
+      size: currentSize * sizeMul,
       points: [pos, pos],
       arrowStyle: currentArrowStyle,
       filled: (currentTool === "rect" || currentTool === "ellipse") ? shapeFilled : undefined,
@@ -274,7 +299,7 @@ export default function Editor() {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
       redrawAnnotations(annotations);
-      drawAnnotation(ctx, updated, scale, imageCanvasRef.current);
+      drawAnnotation(ctx, updated, 1, imageCanvasRef.current);
     });
   };
 
@@ -370,7 +395,7 @@ export default function Editor() {
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    setZoom((z) => Math.min(5, Math.max(0.25, z + delta)));
+    setZoom((z) => Math.min(10, Math.max(0.25, z + delta)));
   };
 
   // パン用マウスハンドラ (コンテナレベル)
@@ -427,8 +452,9 @@ export default function Editor() {
     }));
     setAnnotations(shifted);
 
-    // 画像サイズ更新
-    setImgSize({ w: Math.round(w / scale), h: Math.round(h / scale) });
+    // 画像サイズ更新（キャンバスは元解像度座標のまま）
+    setImgSize({ w: Math.round(w), h: Math.round(h) });
+    applyDisplaySize(Math.round(w), Math.round(h));
 
     // imageData も更新（再描画時に元サイズに戻らないように）
     setImageData(imgCanvas.toDataURL("image/png"));
@@ -441,7 +467,7 @@ export default function Editor() {
     setCurrentTool("arrow");
     setStatus("トリミングしました");
     setTimeout(() => setStatus("編集中"), 2000);
-  }, [cropRegion, imageData, annotations, imgSize, scale]);
+  }, [cropRegion, imageData, annotations, imgSize, applyDisplaySize]);
 
   const handleCropCancel = useCallback(() => {
     setCropRegion(null);
@@ -501,23 +527,24 @@ export default function Editor() {
     ctx.beginPath();
     ctx.rect(cropRegion.x, cropRegion.y, cropRegion.w, cropRegion.h);
     ctx.clip();
-    for (const ann of annotations) drawAnnotation(ctx, ann, scale, imageCanvasRef.current);
+    for (const ann of annotations) drawAnnotation(ctx, ann, 1, imageCanvasRef.current);
     ctx.restore();
     // 枠線
     ctx.strokeStyle = "#3b82f6";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 3]);
+    ctx.lineWidth = 2 * sizeMul;
+    ctx.setLineDash([6 * sizeMul, 3 * sizeMul]);
     ctx.strokeRect(cropRegion.x, cropRegion.y, cropRegion.w, cropRegion.h);
     ctx.setLineDash([]);
     ctx.restore();
-  }, [cropRegion, currentTool, annotations, scale, redrawAnnotations]);
+  }, [cropRegion, currentTool, annotations, sizeMul, redrawAnnotations]);
 
   const handleTextSubmit = () => {
     if (!pendingText || !textInput.trim()) { setPendingText(null); return; }
     const ann: Annotation = {
       tool: "text",
       color: currentColor,
-      size: currentSize * 6 + 12,
+      // 入力欄は CSS px、描画・書き出しは native 画素
+      size: (currentSize * 6 + 12) * sizeMul,
       points: [pendingText, pendingText],
       text: textInput,
     };
@@ -531,56 +558,58 @@ export default function Editor() {
     setTextInput("");
   };
 
-  // 背景込みで合成してエクスポート
+  // 背景込みで合成してエクスポート（元解像度のまま）
   const compositeCanvas = useCallback((): HTMLCanvasElement => {
     const imgC = imageCanvasRef.current!;
     const annC = annotationCanvasRef.current!;
     const out = document.createElement("canvas");
     const ctx = out.getContext("2d")!;
+    // UI 上の padding / 角丸は CSS px → native 画素へ
+    const pxPad = background.enabled ? Math.round(background.padding * sizeMul) : 0;
+    const pxRadius = cornerRadius > 0 ? cornerRadius * sizeMul : 0;
 
     if (!background.enabled) {
       out.width = imgC.width;
       out.height = imgC.height;
       // JPEG + 角丸の場合、透過部分が黒くなるので白で塗りつぶす
-      if (cornerRadius > 0 && imageFormat === "jpeg") {
+      if (pxRadius > 0 && imageFormat === "jpeg") {
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, out.width, out.height);
       }
-      if (cornerRadius > 0) {
+      if (pxRadius > 0) {
         ctx.save();
         ctx.beginPath();
-        ctx.roundRect(0, 0, imgC.width, imgC.height, cornerRadius);
+        ctx.roundRect(0, 0, imgC.width, imgC.height, pxRadius);
         ctx.clip();
       }
       ctx.drawImage(imgC, 0, 0);
       ctx.drawImage(annC, 0, 0);
-      if (cornerRadius > 0) {
+      if (pxRadius > 0) {
         ctx.restore();
       }
     } else {
-      const pad = background.padding;
-      out.width = imgC.width + pad * 2;
-      out.height = imgC.height + pad * 2;
+      out.width = imgC.width + pxPad * 2;
+      out.height = imgC.height + pxPad * 2;
 
       // 背景色を描画
       ctx.fillStyle = background.color;
       ctx.fillRect(0, 0, out.width, out.height);
 
       // スクショを角丸でクリップして描画
-      if (cornerRadius > 0) {
+      if (pxRadius > 0) {
         ctx.save();
         ctx.beginPath();
-        ctx.roundRect(pad, pad, imgC.width, imgC.height, cornerRadius);
+        ctx.roundRect(pxPad, pxPad, imgC.width, imgC.height, pxRadius);
         ctx.clip();
       }
-      ctx.drawImage(imgC, pad, pad);
-      ctx.drawImage(annC, pad, pad);
-      if (cornerRadius > 0) {
+      ctx.drawImage(imgC, pxPad, pxPad);
+      ctx.drawImage(annC, pxPad, pxPad);
+      if (pxRadius > 0) {
         ctx.restore();
       }
     }
     return out;
-  }, [background, cornerRadius, imageFormat]);
+  }, [background, cornerRadius, imageFormat, sizeMul]);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -757,8 +786,8 @@ export default function Editor() {
                   autoFocus
                   className="absolute outline-none bg-transparent border-b border-blue-400"
                   style={{
-                    left: pendingText.x,
-                    top: pendingText.y,
+                    left: pendingText.x * scale,
+                    top: pendingText.y * scale,
                     fontSize: currentSize * 6 + 12,
                     color: currentColor,
                     minWidth: 80,
@@ -794,7 +823,7 @@ export default function Editor() {
         {imgSize.w > 0 && (
           <div className="flex items-center gap-3 text-tb-text-dim font-mono tabular-nums">
             <span>{imgSize.w} <span className="opacity-40">x</span> {imgSize.h}</span>
-            <span className="bg-tb-raised rounded px-1.5 py-0.5 text-tb-text-sub">{Math.round(zoom * 100)}%</span>
+            <span className="bg-tb-raised rounded px-1.5 py-0.5 text-tb-text-sub">{Math.round(zoom * scale * 100)}%</span>
           </div>
         )}
       </div>
