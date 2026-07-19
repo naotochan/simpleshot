@@ -267,6 +267,14 @@ pub fn run() {
                 app.set_activation_policy(tauri::ActivationPolicy::Accessory);
             }
 
+            // タイトルバーにバージョンを表示（設定・エディタ）
+            let titled = format!("SimpleSHOT {}", env!("CARGO_PKG_VERSION"));
+            for label in ["settings", "editor"] {
+                if let Some(win) = app.get_webview_window(label) {
+                    let _ = win.set_title(&titled);
+                }
+            }
+
             tray::setup_tray(&app.handle())?;
 
             let settings = app.state::<AppState>().settings.lock().unwrap_or_else(|e| e.into_inner()).clone();

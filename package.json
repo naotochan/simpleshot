@@ -1,13 +1,15 @@
 {
   "name": "simpleshot",
   "private": true,
-  "version": "0.0.39",
+  "version": "0.0.41",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "setup:signing": "bash scripts/setup-dev-signing.sh",
+    "tauri:build": "bash scripts/setup-dev-signing.sh && tauri build"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
