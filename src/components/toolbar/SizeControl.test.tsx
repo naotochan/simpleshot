@@ -14,6 +14,7 @@ function StatefulSizeControl({
   const [size, setSize] = useState(initial);
   return (
     <SizeControl
+      tool="pen"
       size={size}
       onChange={(n) => {
         setSize(n);
@@ -25,9 +26,15 @@ function StatefulSizeControl({
 
 describe("SizeControl", () => {
   it("shows px unit next to the size value", () => {
-    render(<SizeControl size={8} onChange={vi.fn()} />);
+    render(<SizeControl tool="pen" size={8} onChange={vi.fn()} />);
     expect(screen.getByText("px")).toBeInTheDocument();
-    expect(screen.getByLabelText("太さの数値（px）")).toHaveValue(8);
+    expect(screen.getByLabelText("太さの数値")).toHaveValue(8);
+  });
+
+  it("shows effective size hint for highlighter", () => {
+    render(<SizeControl tool="highlighter" size={4} onChange={vi.fn()} />);
+    expect(screen.getByText("ハイライト")).toBeInTheDocument();
+    expect(screen.getByText("→ 32px")).toBeInTheDocument();
   });
 
   it("clamps numeric input to the brush size range", async () => {
@@ -35,7 +42,7 @@ describe("SizeControl", () => {
     const onChange = vi.fn();
     render(<StatefulSizeControl initial={8} onChange={onChange} />);
 
-    const input = screen.getByLabelText("太さの数値（px）");
+    const input = screen.getByLabelText("太さの数値");
     await user.clear(input);
     await user.type(input, "99");
 

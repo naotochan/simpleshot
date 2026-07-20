@@ -12,6 +12,7 @@ function createProps(overrides: Partial<ComponentProps<typeof Toolbar>> = {}) {
       size: 4,
       arrowStyle: "uniform",
       shapeFilled: false,
+      showSize: true,
       onToolChange: vi.fn(),
       onColorChange: vi.fn(),
       onSizeChange: vi.fn(),
@@ -101,6 +102,7 @@ describe("Toolbar", () => {
         size: 4,
         arrowStyle: "uniform",
         shapeFilled: false,
+        showSize: true,
         onToolChange: vi.fn(),
         onColorChange: vi.fn(),
         onSizeChange: vi.fn(),
@@ -121,6 +123,7 @@ describe("Toolbar", () => {
         size: 4,
         arrowStyle: "uniform",
         shapeFilled: false,
+        showSize: false,
         onToolChange: vi.fn(),
         onColorChange: vi.fn(),
         onSizeChange: vi.fn(),
@@ -138,5 +141,25 @@ describe("Toolbar", () => {
     render(<Toolbar {...props} />);
 
     expect(screen.getByRole("button", { name: "適用" })).toBeDisabled();
+  });
+
+  it("hides size control when showSize is false", () => {
+    const props = createProps({
+      tool: {
+        current: "hand",
+        color: "#ff0000",
+        size: 4,
+        arrowStyle: "uniform",
+        shapeFilled: false,
+        showSize: false,
+        onToolChange: vi.fn(),
+        onColorChange: vi.fn(),
+        onSizeChange: vi.fn(),
+        onArrowStyleChange: vi.fn(),
+        onShapeFilledChange: vi.fn(),
+      },
+    });
+    render(<Toolbar {...props} />);
+    expect(screen.queryByText("太さ")).not.toBeInTheDocument();
   });
 });
