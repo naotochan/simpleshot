@@ -1,3 +1,3 @@
 # Demo assets
 
-`editor.png` is a UI mock of the SimpleSHOT editor for the README (not a live capture from a shipping build).
+`editor.png` is a capture of the Apps section on [portfolio-7010.vercel.app](https://portfolio-7010.vercel.app/) for the README.

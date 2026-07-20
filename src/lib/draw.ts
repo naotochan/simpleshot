@@ -72,8 +72,10 @@ export function drawAnnotation(
       break;
     case "text":
       if (!ann.text) break;
-      ctx.font = `bold ${ann.size}px -apple-system`;
-      ctx.fillText(ann.text, start.x, start.y + ann.size);
+      ctx.font = `bold ${ann.size}px -apple-system, BlinkMacSystemFont, sans-serif`;
+      ctx.textBaseline = "top";
+      ctx.textAlign = "left";
+      ctx.fillText(ann.text, start.x, start.y);
       break;
     case "mosaic": {
       if (!imageCanvas) break;
