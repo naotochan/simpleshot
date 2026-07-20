@@ -4,6 +4,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import Toolbar from "../components/Toolbar";
 import type { Tool, AnnotationColor, ArrowStyle, Point, Annotation } from "../types/annotation";
 import { drawAnnotation } from "../lib/draw";
+import { BRUSH_SIZE_DEFAULT, textSizeFromBrush } from "../lib/brushSize";
 
 export default function Editor() {
   const imageCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -17,7 +18,7 @@ export default function Editor() {
   const [historyIndex, setHistoryIndex] = useState(0);
   const [currentTool, setCurrentTool] = useState<Tool>("arrow");
   const [currentColor, setCurrentColor] = useState<AnnotationColor>("#FF3B30");
-  const [currentSize, setCurrentSize] = useState(3);
+  const [currentSize, setCurrentSize] = useState(BRUSH_SIZE_DEFAULT);
   const [currentArrowStyle, setCurrentArrowStyle] = useState<ArrowStyle>("uniform");
   const [shapeFilled, setShapeFilled] = useState(false);
   const [background, setBackground] = useState({
@@ -122,10 +123,11 @@ export default function Editor() {
     const annCanvas = annotationCanvasRef.current;
     if (!container || !imgCanvas || !annCanvas || nativeW <= 0 || nativeH <= 0) return 1;
 
+    // 余白は画像ピクセル。transform 内なのでフィットは (画像 + 余白) で計算する
     const pad = background.enabled ? background.padding : 0;
-    const maxW = Math.max(1, container.clientWidth - pad * 2 - 32);
-    const maxH = Math.max(1, container.clientHeight - pad * 2 - 32);
-    const fit = Math.min(1, maxW / nativeW, maxH / nativeH);
+    const maxW = Math.max(1, container.clientWidth - 32);
+    const maxH = Math.max(1, container.clientHeight - 32);
+    const fit = Math.min(1, maxW / (nativeW + pad * 2), maxH / (nativeH + pad * 2));
     // 表示縮小は transform のみ。ここで CSS を縮めると拡大時に再サンプリングで粗くなる
     imgCanvas.style.width = `${nativeW}px`;
     imgCanvas.style.height = `${nativeH}px`;
@@ -175,7 +177,8 @@ export default function Editor() {
     return () => ro.disconnect();
   }, [background.enabled, background.padding, applyDisplaySize]);
 
-  // 実効表示倍率（フィット × ユーザズーム）。UI の size → native 画素換算に使う
+  // 実効表示倍率（フィット × ユーザズーム）。
+  // アノテーションの太さは画像ピクセル固定。sizeMul は画面上の UI 枠線（クロップ等）の見た目維持用。
   const displayScale = scale * zoom;
   const sizeMul = displayScale > 0 ? 1 / displayScale : 1;
   sizeMulRef.current = sizeMul;
@@ -285,7 +288,8 @@ export default function Editor() {
     const ann: Annotation = {
       tool: currentTool,
       color: currentColor,
-      size: currentSize * sizeMul,
+      // 太さは画像の native 画素（ズーム／フィット非依存）
+      size: currentSize,
       points: [pos, pos],
       arrowStyle: currentArrowStyle,
       filled: (currentTool === "rect" || currentTool === "ellipse") ? shapeFilled : undefined,
@@ -602,8 +606,8 @@ export default function Editor() {
     const ann: Annotation = {
       tool: "text",
       color: currentColor,
-      // 入力欄は CSS px、描画・書き出しは native 画素
-      size: (currentSize * 6 + 12) * sizeMul,
+      // 入力欄・描画とも画像 native px（キャンバスは 1:1 + transform）
+      size: textSizeFromBrush(currentSize),
       points: [pendingText, pendingText],
       text: textInput,
     };
@@ -623,9 +627,9 @@ export default function Editor() {
     const annC = annotationCanvasRef.current!;
     const out = document.createElement("canvas");
     const ctx = out.getContext("2d")!;
-    // UI 上の padding / 角丸は CSS px → native 画素へ
-    const pxPad = background.enabled ? Math.round(background.padding * sizeMul) : 0;
-    const pxRadius = cornerRadius > 0 ? cornerRadius * sizeMul : 0;
+    // 余白・角丸はプレビューと同じく画像ピクセル
+    const pxPad = background.enabled ? Math.round(background.padding) : 0;
+    const pxRadius = cornerRadius > 0 ? cornerRadius : 0;
 
     if (!background.enabled) {
       out.width = imgC.width;
@@ -668,7 +672,7 @@ export default function Editor() {
       }
     }
     return out;
-  }, [background, cornerRadius, imageFormat, sizeMul]);
+  }, [background, cornerRadius, imageFormat]);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -847,7 +851,7 @@ export default function Editor() {
                   style={{
                     left: pendingText.x,
                     top: pendingText.y,
-                    fontSize: currentSize * 6 + 12,
+                    fontSize: textSizeFromBrush(currentSize),
                     color: currentColor,
                     minWidth: 80,
                   }}

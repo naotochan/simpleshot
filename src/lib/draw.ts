@@ -82,7 +82,7 @@ export function drawAnnotation(
       const mw = Math.round(Math.abs(end.x - start.x));
       const mh = Math.round(Math.abs(end.y - start.y));
       if (mw < 2 || mh < 2) break;
-      // ann.size は native 画素。ブロックは見た目のモザイク感が出る範囲に収める
+      // ann.size は画像の native 画素。ブロックは見た目のモザイク感が出る範囲に収める
       const block = Math.max(8, Math.min(64, Math.round(ann.size * 2.5)));
       const sw = Math.max(1, Math.round(mw / block));
       const sh = Math.max(1, Math.round(mh / block));
