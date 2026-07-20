@@ -22,6 +22,7 @@ export interface ToolControls {
   size: number;
   arrowStyle: ArrowStyle;
   shapeFilled: boolean;
+  showSize: boolean;
   onToolChange: (t: Tool) => void;
   onColorChange: (c: AnnotationColor) => void;
   onSizeChange: (s: number) => void;
@@ -115,7 +116,9 @@ const Toolbar = memo(function Toolbar({
           onRemoveFavorite={colors.onRemoveFavorite}
         />
 
-        <SizeControl size={tool.size} onChange={tool.onSizeChange} />
+        {tool.showSize && (
+          <SizeControl tool={tool.current} size={tool.size} onChange={tool.onSizeChange} />
+        )}
 
         <HistoryButtons
           canUndo={history.canUndo}

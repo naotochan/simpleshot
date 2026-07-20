@@ -65,7 +65,7 @@ export function BackgroundControls({
                       : "text-tb-text-dim hover:text-tb-text-sub hover:bg-tb-hover"
                   }`}
                 >
-                  {p === 0 ? "なし" : p}
+                  {p === 0 ? "なし" : `${p}px`}
                 </button>
               ))}
             </div>
@@ -75,7 +75,7 @@ export function BackgroundControls({
 
       <div className="w-px h-4 bg-tb-border/50" />
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2" title="画像のピクセル単位">
         <span className="text-[11px] font-medium text-tb-text-sub tracking-wide uppercase">角丸</span>
         <input
           type="range"
@@ -84,8 +84,9 @@ export function BackgroundControls({
           value={cornerRadius}
           onChange={(e) => onCornerRadiusChange(Number(e.target.value))}
           className="slider-tb w-20"
+          aria-label="角丸（画像ピクセル）"
         />
-        <span className="text-[11px] font-mono tabular-nums text-tb-text-dim w-5 text-right">{cornerRadius}</span>
+        <span className="text-[11px] font-mono tabular-nums text-tb-text-dim w-9 text-right">{cornerRadius}px</span>
       </div>
     </div>
   );
