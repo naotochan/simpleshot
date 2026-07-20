@@ -2,40 +2,15 @@
 
 macOS 向けのスクリーンショット & アノテーションツール。
 
-## 機能
+スクショ撮って、ちょっとだけアノテーションして、すぐに共有できる。軽量でシンプルなスクショアプリです。
 
-### キャプチャ
-- **範囲選択** — ドラッグで任意の領域をキャプチャ
-- **全画面** — クリックでメインディスプレイ全体をキャプチャ
-- **ウィンドウ選択** — Space キーでモード切替、ウィンドウ単位でキャプチャ
+<p align="center">
+  <img src="docs/demo/editor.png" alt="SimpleSHOT — アノテーション編集画面" width="900" />
+</p>
 
-### アノテーション
-- 矢印 (均一 / テーパー)
-- テキスト
-- 矩形 / 楕円 (枠線 / 塗りつぶし)
-- ペン / ハイライタ
-- モザイク
-- トリミング (復元可能)
+アプリを起動すると常駐し、`Cmd+Shift+Space` でキャプチャを開始します。
 
-### その他
-- グローバルホットキー (デフォルト: `Cmd+Shift+Space`)
-- ズーム / パン操作
-- クリップボードコピー
-- デスクトップに自動保存 (`simpleshot-yyyymmdd-hhmmss.ext`)
-- 背景色 / 余白のカスタマイズ
-- お気に入り色 / スポイト
-- Undo / Redo
-
-## 技術スタック
-
-- **フロントエンド** — React + TypeScript (Vite)
-- **バックエンド** — Rust (Tauri v2)
-- **キャプチャ** — macOS screencapture CLI + CoreGraphics
-
-## 必要な権限
-
-- **スクリーン録画** — スクリーンショット撮影に必要
-- **アクセシビリティ** — グローバルホットキーに必要
+アプリは無料です。
 
 ## ライセンス
 
@@ -43,4 +18,28 @@ MIT
 
 ## その他
 
-気に入ってくれて、余裕があれば [Buy Me a Coffee](https://buymeacoffee.com/naotok705) でコーヒーをおごってもらえるとうれしいです（任意です）。SimpleSHOT 自体は無料です。
+もし気に入ってくれたら [Buy Me a Coffee](https://buymeacoffee.com/naotok705) でコーヒーをおごってもらえるとうれしいです。
+
+---
+
+# SimpleSHOT
+
+A lightweight screenshot & annotation app for macOS.
+
+Capture, add a quick annotation, and share — nothing more than you need.
+
+<p align="center">
+  <img src="docs/demo/editor.png" alt="SimpleSHOT — annotation editor" width="900" />
+</p>
+
+It stays in the menu bar. Press `Cmd+Shift+Space` to start a capture.
+
+SimpleSHOT is free.
+
+## License
+
+MIT
+
+## Other
+
+If you like it, you can [buy me a coffee](https://buymeacoffee.com/naotok705) — optional.
