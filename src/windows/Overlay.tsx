@@ -31,6 +31,25 @@ function hitTestFrontmost(
   return null;
 }
 
+/** 2矩形の交差。交差なしなら null */
+function rectIntersection(
+  ax: number,
+  ay: number,
+  aw: number,
+  ah: number,
+  bx: number,
+  by: number,
+  bw: number,
+  bh: number
+): { x: number; y: number; w: number; h: number } | null {
+  const x = Math.max(ax, bx);
+  const y = Math.max(ay, by);
+  const x2 = Math.min(ax + aw, bx + bw);
+  const y2 = Math.min(ay + ah, by + bh);
+  if (x2 <= x || y2 <= y) return null;
+  return { x, y, w: x2 - x, h: y2 - y };
+}
+
 export default function Overlay() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const modeRef = useRef<Mode>("region");
@@ -101,13 +120,29 @@ export default function Overlay() {
         }
       }
     } else if (currentMode === "window") {
-      // ネイティブ寄せ: 暗幕 + カットアウト + 細い枠のみ（青ベタ塗りなし）
-      ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+      // 暗幕 + ホバー窓の「見えている部分」だけカットアウト + 枠
+      // 背面窓をホバーしたとき、前面で隠れている領域は暗幕のままにする
+      const dim = "rgba(0, 0, 0, 0.4)";
+      ctx.fillStyle = dim;
       ctx.fillRect(0, 0, W, H);
 
       if (win) {
         const { x, y, w, h } = win;
         ctx.clearRect(x, y, w, h);
+
+        const wins = windowsRef.current;
+        const idx = wins.findIndex((winfo) => winfo.id === win.id);
+        // リスト上で手前にある窓との重なりを再暗幕（背面ホバー時に前面が明るく残らないように）
+        if (idx > 0) {
+          for (let i = 0; i < idx; i++) {
+            const front = wins[i];
+            const overlap = rectIntersection(x, y, w, h, front.x, front.y, front.w, front.h);
+            if (overlap) {
+              ctx.fillStyle = dim;
+              ctx.fillRect(overlap.x, overlap.y, overlap.w, overlap.h);
+            }
+          }
+        }
 
         ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
         ctx.lineWidth = 2;
