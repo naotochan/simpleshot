@@ -3,6 +3,7 @@ import { onCaptureComplete, getSettings, saveSettings } from "../lib/ipc";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import Toolbar from "../components/Toolbar";
 import { BrushCursor } from "../components/editor/BrushCursor";
+import { TextInputOverlay } from "../components/editor/TextInputOverlay";
 import type { Tool, AnnotationColor, ArrowStyle, Annotation, AnnotationTool } from "../types/annotation";
 import { isShapeTool } from "../types/annotation";
 import {
@@ -310,9 +311,10 @@ export default function Editor() {
     setCursorPos(null);
   };
 
-  const handleTextSubmit = () => {
+  const handleTextSubmit = useCallback(() => {
     if (!pendingText || !textInput.trim()) {
       setPendingText(null);
+      setTextInput("");
       return;
     }
     const ann: Annotation = {
@@ -320,12 +322,17 @@ export default function Editor() {
       color: currentColor,
       size: textSizeFromBrush(currentSize),
       points: [pendingText, pendingText],
-      text: textInput,
+      text: textInput.trim(),
     };
-    history.pushHistory([...history.annotations, ann]);
+    history.pushHistory([...history.annotationsRef.current, ann]);
     setPendingText(null);
     setTextInput("");
-  };
+  }, [pendingText, textInput, currentColor, currentSize, history]);
+
+  const handleTextCancel = useCallback(() => {
+    setPendingText(null);
+    setTextInput("");
+  }, []);
 
   const pad = background.enabled ? background.padding : 0;
   const showSize = shouldShowSizeControl(currentTool, shapeFilled);
@@ -447,7 +454,7 @@ export default function Editor() {
               style={{
                 lineHeight: 0,
                 borderRadius: cornerRadius,
-                overflow: "hidden",
+                overflow: pendingText ? "visible" : "hidden",
               }}
             >
               <canvas ref={imageCanvasRef} className="block" />
@@ -470,7 +477,7 @@ export default function Editor() {
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseLeave}
               />
-              {cursorPos && previewDiameter !== null && !eyedropper.isPickingColor && (
+              {cursorPos && previewDiameter !== null && !eyedropper.isPickingColor && !pendingText && (
                 <BrushCursor
                   x={cursorPos.x}
                   y={cursorPos.y}
@@ -481,23 +488,17 @@ export default function Editor() {
                 />
               )}
               {pendingText && (
-                <input
-                  autoFocus
-                  className="absolute outline-none bg-transparent border-b border-blue-400"
-                  style={{
-                    left: pendingText.x,
-                    top: pendingText.y,
-                    fontSize: textSizeFromBrush(currentSize),
-                    color: currentColor,
-                    minWidth: 80,
-                  }}
+                <TextInputOverlay
+                  x={pendingText.x}
+                  y={pendingText.y}
+                  fontSize={textSizeFromBrush(currentSize)}
+                  color={currentColor}
                   value={textInput}
-                  onChange={(e) => setTextInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleTextSubmit();
-                    if (e.key === "Escape") setPendingText(null);
-                  }}
-                  onBlur={handleTextSubmit}
+                  canvasWidth={imgSize.w}
+                  canvasHeight={imgSize.h}
+                  onChange={setTextInput}
+                  onSubmit={handleTextSubmit}
+                  onCancel={handleTextCancel}
                 />
               )}
             </div>

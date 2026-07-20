@@ -117,7 +117,12 @@ const Toolbar = memo(function Toolbar({
         />
 
         {tool.showSize && (
-          <SizeControl tool={tool.current} size={tool.size} onChange={tool.onSizeChange} />
+          <SizeControl
+            tool={tool.current}
+            size={tool.size}
+            color={tool.color}
+            onChange={tool.onSizeChange}
+          />
         )}
 
         <HistoryButtons
