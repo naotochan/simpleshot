@@ -233,6 +233,7 @@ export default function Editor() {
     layer.ensureBaseLayer();
     layer.isDrawingRef.current = true;
     layer.drawingAnnRef.current = ann;
+    setCursorPos(null);
     layer.paintDragPreview(ann);
   };
 

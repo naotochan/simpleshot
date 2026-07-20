@@ -40,3 +40,7 @@ macOS 向けのスクリーンショット & アノテーションツール。
 ## ライセンス
 
 MIT
+
+## その他
+
+気に入ってくれて、余裕があれば [Buy Me a Coffee](https://buymeacoffee.com/naotok705) でコーヒーをおごってもらえるとうれしいです（任意です）。SimpleSHOT 自体は無料です。
