@@ -1,4 +1,5 @@
 use tauri::{
+    image::Image,
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::TrayIconBuilder,
     AppHandle,
@@ -13,8 +14,10 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), tauri::Error> {
 
     let menu = Menu::with_items(app, &[&screenshot, &sep1, &settings, &sep2, &quit])?;
 
+    let tray_icon = Image::from_bytes(include_bytes!("../icons/tray-icon.png"))?;
+
     TrayIconBuilder::new()
-        .icon(app.default_window_icon().cloned().unwrap())
+        .icon(tray_icon)
         .icon_as_template(true)
         .menu(&menu)
         .show_menu_on_left_click(true)
