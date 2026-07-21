@@ -44,7 +44,7 @@ export function TextInputOverlay({
   return (
     <input
       ref={ref}
-      className="absolute outline-none bg-transparent border-b border-blue-400 select-text"
+      className="absolute outline-none bg-transparent border-b border-tb-text/50 select-text"
       style={{
         left,
         top,

@@ -20,12 +20,14 @@ import { useEyedropper } from "../hooks/useEyedropper";
 import { useAnnotationLayer } from "../hooks/useAnnotationLayer";
 import { useCrop } from "../hooks/useCrop";
 import { useEditorExport } from "../hooks/useEditorExport";
+import { useLocalization } from "../lib/localization";
 
 function isDrawableTool(tool: Tool): tool is AnnotationTool {
   return tool !== "crop" && tool !== "hand" && tool !== "text";
 }
 
 export default function Editor() {
+  const { t } = useLocalization();
   const imageCanvasRef = useRef<HTMLCanvasElement>(null);
   const annotationCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -40,12 +42,12 @@ export default function Editor() {
   const [shapeFilled, setShapeFilled] = useState(false);
   const [background, setBackground] = useState({
     enabled: false,
-    color: "#1e1e2e",
+    color: "#1a1a1a",
     padding: 40,
   });
   const [pendingText, setPendingText] = useState<{ x: number; y: number } | null>(null);
   const [textInput, setTextInput] = useState("");
-  const [status, setStatus] = useState("キャプチャを待っています...");
+  const [status, setStatus] = useState("");
   const [imageFormat, setImageFormat] = useState<"png" | "jpeg">("png");
   const [favoriteColors, setFavoriteColors] = useState<string[]>([]);
   const [cornerRadius, setCornerRadius] = useState(0);
@@ -87,6 +89,7 @@ export default function Editor() {
     annotationsRef: history.annotationsRef,
     sizeMul: panZoom.sizeMul,
     setStatus,
+    t,
   });
 
   const { handleCopy, handleSave } = useEditorExport({
@@ -96,7 +99,14 @@ export default function Editor() {
     cornerRadius,
     imageFormat,
     setStatus,
+    t,
   });
+
+  useEffect(() => {
+    if (!imageData) {
+      setStatus(t("Waiting for capture…", "キャプチャを待っています…"));
+    }
+  }, [t, imageData]);
 
   useEffect(() => {
     getSettings()
@@ -151,14 +161,14 @@ export default function Editor() {
       history.resetHistory([]);
       panZoom.resetView();
       crop.clearCropRegion();
-      setStatus("編集中");
+      setStatus(t("Editing", "編集中"));
     }).then((fn) => {
       unlisten = fn;
     });
     return () => {
       unlisten?.();
     };
-  }, [history.resetHistory, panZoom.resetView, crop.clearCropRegion]);
+  }, [history.resetHistory, panZoom.resetView, crop.clearCropRegion, t]);
 
   useEffect(() => {
     if (!imageData || !imageCanvasRef.current) return;

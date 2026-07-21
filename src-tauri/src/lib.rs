@@ -160,8 +160,9 @@ fn check_accessibility_permission() -> bool {
 
 #[tauri::command]
 fn open_system_preferences(_app: AppHandle) {
+    // macOS 13+ System Settings URL（旧 Security ペイン URL は Sequoia 以降で届かないことがある）
     let _ = std::process::Command::new("open")
-        .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")
+        .arg("x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_ScreenCapture")
         .spawn();
 }
 

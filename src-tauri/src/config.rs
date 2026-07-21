@@ -9,7 +9,7 @@ pub struct HotkeyConfig {
 impl Default for HotkeyConfig {
     fn default() -> Self {
         Self {
-            screenshot: "CmdOrCtrl+Shift+Space".to_string(),
+            screenshot: "Command+Shift+Space".to_string(),
         }
     }
 }
@@ -22,6 +22,20 @@ pub struct AppSettings {
     pub show_cursor: bool,
     #[serde(default)]
     pub favorite_colors: Vec<String>,
+    /// "system" | "english" | "japanese"
+    #[serde(default = "default_app_language")]
+    pub app_language: String,
+    /// "system" | "light" | "dark"
+    #[serde(default = "default_app_appearance")]
+    pub app_appearance: String,
+}
+
+fn default_app_language() -> String {
+    "system".to_string()
+}
+
+fn default_app_appearance() -> String {
+    "system".to_string()
 }
 
 impl Default for AppSettings {
@@ -35,6 +49,8 @@ impl Default for AppSettings {
             image_format: "png".to_string(),
             show_cursor: false,
             favorite_colors: vec![],
+            app_language: default_app_language(),
+            app_appearance: default_app_appearance(),
         }
     }
 }

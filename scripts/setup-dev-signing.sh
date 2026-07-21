@@ -2,6 +2,11 @@
 # SimpleSHOT 開発用の自己署名 Code Signing 証明書を一度だけ作成する。
 # 同じ identity で署名すると、画面収録などの TCC 権限が再ビルド後も維持される。
 # 費用ゼロ・Apple Developer プログラム不要。
+#
+# 注意 (macOS Sequoia / 26+):
+# 自己署名には Team ID が無い。設定で画面収録を許可しても黒画像になる場合は、
+# Xcode に無料 Apple ID でサインインし「Apple Development」証明書を作り、
+# tauri.conf.json の signingIdentity をその名前に切り替えてください。
 set -euo pipefail
 
 IDENTITY_NAME="SimpleSHOT Dev"

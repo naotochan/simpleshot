@@ -2,20 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* tb-* トークン（tailwind.config.js と同期） */
-  --tb-base: #13141a;
-  --tb-raised: #1c1d27;
-  --tb-hover: #262836;
-  --tb-active: #2e3145;
-  --tb-border: #2a2c3a;
-  --tb-text: #e8e9ed;
-  --tb-text-sub: #8b8fa3;
-  --tb-text-dim: #5c6078;
-  --tb-canvas: #0f1015;
-  --tb-selected: #3b82f6;
-  --tb-success: #10b981;
-  --tb-warning: #fb923c;
+/*
+  Theme tokens aligned with Hayate (HayateTheme.swift):
+  neutral charcoal canvas / panel / wash — no indigo tint.
+  Selection uses ink wash (white-in-dark / black-in-light), like HayateChrome.
+*/
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  /* settingsCanvas 0.12 */
+  --tb-base: 31 31 31;
+  /* panel 0.16 / 0.16 / 0.17 */
+  --tb-raised: 41 41 43;
+  /* wash ~0.08–0.10 over base */
+  --tb-hover: 48 48 50;
+  --tb-active: 56 56 58;
+  /* separator ≈ white @ 6–8% */
+  --tb-border: 58 58 60;
+  /* fg */
+  --tb-text: 245 245 245;
+  --tb-text-sub: 148 148 148;
+  --tb-text-dim: 102 102 102;
+  /* canvas 0.10 */
+  --tb-canvas: 26 26 26;
+  /* selection ink (use with /15–/25 opacity for wash) */
+  --tb-selected: 255 255 255;
+  --tb-success: 52 199 89;
+  --tb-warning: 255 159 10;
+  --tb-danger: 255 69 58;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  /* settingsCanvas 0.95 */
+  --tb-base: 242 242 245;
+  /* panel white */
+  --tb-raised: 255 255 255;
+  --tb-hover: 235 235 237;
+  --tb-active: 224 224 228;
+  /* separator black @ 8% */
+  --tb-border: 210 210 215;
+  --tb-text: 29 29 31;
+  --tb-text-sub: 110 110 115;
+  --tb-text-dim: 142 142 147;
+  /* canvas 0.93 */
+  --tb-canvas: 237 237 239;
+  --tb-selected: 0 0 0;
+  --tb-success: 40 180 70;
+  --tb-warning: 232 130 0;
+  --tb-danger: 224 50 50;
 }
 
 * {
@@ -32,6 +68,16 @@ body,
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
+  background: rgb(var(--tb-base));
+  color: rgb(var(--tb-text));
+}
+
+/* Capture overlay: see through to the desktop (window is transparent: true) */
+html[data-view="overlay"],
+html[data-view="overlay"] body,
+html[data-view="overlay"] #root {
+  background: transparent;
+  color: #fff;
 }
 
 /* カスタムスクロールバー */
@@ -42,30 +88,27 @@ body,
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgb(var(--tb-text) / 0.2);
   border-radius: 3px;
 }
 
-/* ツールバー横スクロール（overflow 時） */
 .toolbar-scroll {
   scrollbar-width: thin;
-  scrollbar-color: var(--tb-border) transparent;
+  scrollbar-color: rgb(var(--tb-border)) transparent;
 }
 .toolbar-scroll::-webkit-scrollbar {
   height: 4px;
 }
 .toolbar-scroll::-webkit-scrollbar-thumb {
-  background: var(--tb-border);
+  background: rgb(var(--tb-border));
   border-radius: 2px;
 }
 
-/* ツールグループ コンテナ */
 .tool-group {
   @apply flex items-center gap-0.5 bg-tb-raised border border-tb-border/50 rounded-xl flex-shrink-0;
   padding: 3px 5px;
 }
 
-/* カスタムレンジスライダー（thumb をトラック中央に） */
 .slider-tb {
   -webkit-appearance: none;
   appearance: none;
@@ -79,7 +122,7 @@ body,
 .slider-tb::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
-  background: var(--tb-border);
+  background: rgb(var(--tb-border));
 }
 
 .slider-tb::-webkit-slider-thumb {
@@ -87,10 +130,10 @@ body,
   appearance: none;
   width: 14px;
   height: 14px;
-  margin-top: -5px; /* (14 - 4) / 2 */
+  margin-top: -5px;
   border-radius: 50%;
-  background: var(--tb-text);
-  border: 2px solid var(--tb-selected);
+  background: rgb(var(--tb-text));
+  border: 2px solid rgb(var(--tb-text) / 0.55);
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -98,26 +141,25 @@ body,
 
 .slider-tb::-webkit-slider-thumb:hover {
   transform: scale(1.15);
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 4px rgb(var(--tb-text) / 0.12), 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .slider-tb::-moz-range-track {
   height: 4px;
   border-radius: 2px;
-  background: var(--tb-border);
+  background: rgb(var(--tb-border));
 }
 
 .slider-tb::-moz-range-thumb {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--tb-text);
-  border: 2px solid var(--tb-selected);
+  background: rgb(var(--tb-text));
+  border: 2px solid rgb(var(--tb-text) / 0.55);
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-/* BG トグルスイッチ */
 .toggle-switch {
   @apply bg-tb-border flex-shrink-0;
   position: relative;
@@ -131,7 +173,7 @@ body,
 }
 
 .toggle-switch[data-on="true"] {
-  background: var(--tb-selected);
+  background: rgb(var(--tb-text) / 0.85);
 }
 
 .toggle-switch::after {
@@ -142,11 +184,43 @@ body,
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--tb-text);
+  background: rgb(var(--tb-raised));
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   transition: transform 0.2s ease;
 }
 
 .toggle-switch[data-on="true"]::after {
   transform: translateX(16px);
+  background: rgb(var(--tb-base));
+}
+
+.toggle-switch:focus-visible {
+  outline: 2px solid rgb(var(--tb-text) / 0.45);
+  outline-offset: 2px;
+}
+
+/* Native select: hide OS chrome, single chevron */
+.settings-select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgb(var(--tb-border));
+  background-color: rgb(var(--tb-base));
+  color: rgb(var(--tb-text));
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  background-size: 12px;
+}
+.settings-select:focus {
+  outline: none;
+}
+.settings-select:focus-visible {
+  box-shadow: 0 0 0 2px rgb(var(--tb-selected) / 0.25);
+}
+[data-theme="light"] .settings-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%23666' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }

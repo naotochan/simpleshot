@@ -32,6 +32,7 @@ pub async fn capture_region(x: i32, y: i32, w: u32, h: u32, show_cursor: bool) -
             String::from_utf8_lossy(&output.stderr)
         ));
     }
+    ensure_not_blackout(&path)?;
     Ok(path)
 }
 
@@ -54,6 +55,7 @@ pub async fn capture_fullscreen(show_cursor: bool) -> Result<PathBuf, String> {
             String::from_utf8_lossy(&output.stderr)
         ));
     }
+    ensure_not_blackout(&path)?;
     Ok(path)
 }
 
@@ -77,7 +79,21 @@ pub async fn capture_window_by_id(window_id: u32, show_cursor: bool) -> Result<P
             String::from_utf8_lossy(&output.stderr)
         ));
     }
+    ensure_not_blackout(&path)?;
     Ok(path)
+}
+
+fn ensure_not_blackout(path: &Path) -> Result<(), String> {
+    if is_mostly_black(path) {
+        Err(
+            "Screen capture returned a blank image. Quit SimpleSHOT completely, \
+             toggle Screen Recording off/on for SimpleSHOT in System Settings, \
+             then relaunch the app."
+                .into(),
+        )
+    } else {
+        Ok(())
+    }
 }
 
 /// キャプチャ画像をbase64エンコードして返す
@@ -141,15 +157,50 @@ pub fn save_base64_to_file(base64_data: &str, path: &str) -> Result<(), String> 
     std::fs::write(&expanded, bytes).map_err(|e| format!("write error: {}", e))
 }
 
-/// スクリーン録画権限のチェック
-pub fn check_screen_permission() -> bool {
-    let output = Command::new("/usr/sbin/screencapture")
-        .args(["-x", "/dev/null"])
-        .output();
-    match output {
-        Ok(o) => o.status.success(),
-        Err(_) => false,
+/// キャプチャ結果が実質ブラックアウトか（権限不足・entitlement 欠落でよく起きる）
+pub fn is_mostly_black(path: &Path) -> bool {
+    let Ok(bytes) = std::fs::read(path) else {
+        return true;
+    };
+    let Ok(img) = image::load_from_memory(&bytes) else {
+        return true;
+    };
+    let rgba = img.to_rgba8();
+    let data = rgba.as_raw();
+    if data.is_empty() {
+        return true;
     }
+    // サンプリングして平均輝度を見る（全画素走査は重い）
+    let step = (data.len() / 4).max(1) / 4096 + 1;
+    let mut sum: u64 = 0;
+    let mut count: u64 = 0;
+    let mut i = 0;
+    while i + 3 < data.len() {
+        let r = data[i] as u64;
+        let g = data[i + 1] as u64;
+        let b = data[i + 2] as u64;
+        sum += r + g + b;
+        count += 1;
+        i += 4 * step;
+    }
+    if count == 0 {
+        return true;
+    }
+    (sum / count) < 8 // 0–765 スケールの平均がほぼ真っ黒
+}
+
+/// スクリーン録画権限のチェック（小さな実キャプチャ＋黒判定）
+pub fn check_screen_permission() -> bool {
+    let path = tmp_path();
+    let output = Command::new("/usr/sbin/screencapture")
+        .args(["-x", "-R", "0,0,64,64", path.to_str().unwrap()])
+        .output();
+    let ok = match output {
+        Ok(o) if o.status.success() => path.exists() && !is_mostly_black(&path),
+        _ => false,
+    };
+    let _ = std::fs::remove_file(&path);
+    ok
 }
 
 /// オンスクリーンのウィンドウ一覧を取得 (Quartz経由)

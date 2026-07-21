@@ -7,6 +7,7 @@ import {
   captureWindowById,
   type WindowInfo,
 } from "../lib/ipc";
+import { useLocalization } from "../lib/localization";
 
 type Mode = "region" | "window";
 
@@ -51,6 +52,7 @@ function rectIntersection(
 }
 
 export default function Overlay() {
+  const { t } = useLocalization();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const modeRef = useRef<Mode>("region");
   const windowsRef = useRef<WindowInfo[]>([]);
@@ -324,9 +326,9 @@ export default function Overlay() {
       >
         {mode === "window"
           ? hoveredWin
-            ? `${hoveredWin.name}  ｜  クリック: キャプチャ  ｜  Esc: 戻る`
-            : `ウィンドウを選択 (${windows.length}件)  ｜  クリック: キャプチャ  ｜  Esc: 戻る`
-          : "ドラッグ: 範囲選択  ｜  クリック: 全画面  ｜  Space: ウィンドウ選択  ｜  Esc: 閉じる"}
+            ? `${hoveredWin.name}  ｜  ${t("Click: Capture", "クリック: キャプチャ")}  ｜  Esc: ${t("Back", "戻る")}`
+            : `${t("Select a window", "ウィンドウを選択")} (${windows.length})  ｜  ${t("Click: Capture", "クリック: キャプチャ")}  ｜  Esc: ${t("Back", "戻る")}`
+          : `${t("Drag: Region", "ドラッグ: 範囲選択")}  ｜  ${t("Click: Full screen", "クリック: 全画面")}  ｜  Space: ${t("Window select", "ウィンドウ選択")}  ｜  Esc: ${t("Close", "閉じる")}`}
       </div>
     </div>
   );

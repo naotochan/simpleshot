@@ -1,5 +1,6 @@
 import { UndoIcon, RedoIcon } from "./icons";
 import { BTN_DEFAULT } from "./styles";
+import { useLocalization } from "../../lib/localization";
 
 interface HistoryButtonsProps {
   canUndo: boolean;
@@ -9,13 +10,15 @@ interface HistoryButtonsProps {
 }
 
 export function HistoryButtons({ canUndo, canRedo, onUndo, onRedo }: HistoryButtonsProps) {
+  const { t } = useLocalization();
   return (
     <div className="tool-group">
       <button
         onClick={onUndo}
         disabled={!canUndo}
         className={`${BTN_DEFAULT} disabled:opacity-20`}
-        title="元に戻す (⌘Z)"
+        title={t("Undo (⌘Z)", "元に戻す (⌘Z)")}
+        aria-label={t("Undo", "元に戻す")}
       >
         <UndoIcon />
       </button>
@@ -23,7 +26,8 @@ export function HistoryButtons({ canUndo, canRedo, onUndo, onRedo }: HistoryButt
         onClick={onRedo}
         disabled={!canRedo}
         className={`${BTN_DEFAULT} disabled:opacity-20`}
-        title="やり直し (⌘⇧Z)"
+        title={t("Redo (⌘⇧Z)", "やり直し (⌘⇧Z)")}
+        aria-label={t("Redo", "やり直し")}
       >
         <RedoIcon />
       </button>

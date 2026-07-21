@@ -8,6 +8,8 @@ interface BackgroundState {
   padding: number;
 }
 
+type Translate = (english: string, japanese: string) => string;
+
 interface UseEditorExportOpts {
   imageCanvasRef: RefObject<HTMLCanvasElement | null>;
   annotationCanvasRef: RefObject<HTMLCanvasElement | null>;
@@ -15,6 +17,7 @@ interface UseEditorExportOpts {
   cornerRadius: number;
   imageFormat: "png" | "jpeg";
   setStatus: (s: string) => void;
+  t: Translate;
 }
 
 export function useEditorExport({
@@ -24,6 +27,7 @@ export function useEditorExport({
   cornerRadius,
   imageFormat,
   setStatus,
+  t,
 }: UseEditorExportOpts) {
   const compositeCanvas = useCallback((): HTMLCanvasElement => {
     const imgC = imageCanvasRef.current!;
@@ -68,21 +72,23 @@ export function useEditorExport({
   }, [imageCanvasRef, annotationCanvasRef, background, cornerRadius, imageFormat]);
 
   const handleCopy = useCallback(async () => {
+    const editing = t("Editing", "編集中");
     try {
       const out = compositeCanvas();
       const mime = imageFormat === "jpeg" ? "image/jpeg" : "image/png";
       const prefix = `data:${mime};base64,`;
       const b64 = out.toDataURL(mime).replace(prefix, "");
       await copyToClipboard(b64, imageFormat === "jpeg" ? "jpg" : "png");
-      setStatus("クリップボードにコピーしました");
-      setTimeout(() => setStatus("編集中"), 2000);
+      setStatus(t("Copied to clipboard", "クリップボードにコピーしました"));
+      setTimeout(() => setStatus(editing), 2000);
     } catch (err) {
-      setStatus(`コピーに失敗しました: ${err}`);
-      setTimeout(() => setStatus("編集中"), 3000);
+      setStatus(`${t("Copy failed", "コピーに失敗しました")}: ${err}`);
+      setTimeout(() => setStatus(editing), 3000);
     }
-  }, [compositeCanvas, imageFormat, setStatus]);
+  }, [compositeCanvas, imageFormat, setStatus, t]);
 
   const handleSave = useCallback(async () => {
+    const editing = t("Editing", "編集中");
     try {
       const out = compositeCanvas();
       const isJpeg = imageFormat === "jpeg";
@@ -104,13 +110,13 @@ export function useEditorExport({
       const fullPath = `${dir}/${filename}`;
 
       await saveImage(b64, fullPath);
-      setStatus(`保存しました: ${fullPath}`);
+      setStatus(`${t("Saved", "保存しました")}: ${fullPath}`);
       setTimeout(() => getCurrentWindow().hide(), 500);
     } catch (err) {
-      setStatus(`保存に失敗しました: ${err}`);
-      setTimeout(() => setStatus("編集中"), 3000);
+      setStatus(`${t("Save failed", "保存に失敗しました")}: ${err}`);
+      setTimeout(() => setStatus(editing), 3000);
     }
-  }, [compositeCanvas, imageFormat, setStatus]);
+  }, [compositeCanvas, imageFormat, setStatus, t]);
 
   return { compositeCanvas, handleCopy, handleSave };
 }

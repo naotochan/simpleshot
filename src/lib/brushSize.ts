@@ -42,16 +42,19 @@ export function effectiveSizeFromBrush(tool: Tool, brushSize: number): number {
   }
 }
 
-export function sizeControlLabel(tool: Tool): string {
+export function sizeControlLabel(
+  tool: Tool,
+  t: (english: string, japanese: string) => string = (_en, ja) => ja
+): string {
   switch (tool) {
     case "text":
-      return "文字";
+      return t("Text", "文字");
     case "highlighter":
-      return "ハイライト";
+      return t("Highlight", "ハイライト");
     case "mosaic":
-      return "粗さ";
+      return t("Block", "粗さ");
     default:
-      return "太さ";
+      return t("Size", "太さ");
   }
 }
 

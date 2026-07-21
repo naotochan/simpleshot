@@ -9,6 +9,9 @@ export interface CaptureCompletePayload {
   height: number;
 }
 
+export type AppLanguageSetting = "system" | "english" | "japanese";
+export type AppAppearanceSetting = "system" | "light" | "dark";
+
 export interface AppSettings {
   hotkeys: {
     screenshot: string;
@@ -17,6 +20,8 @@ export interface AppSettings {
   image_format: "png" | "jpeg";
   show_cursor: boolean;
   favorite_colors: string[];
+  app_language: AppLanguageSetting;
+  app_appearance: AppAppearanceSetting;
 }
 
 export interface WindowInfo {
