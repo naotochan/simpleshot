@@ -3,6 +3,6 @@
 <plist version="1.0">
 <dict>
 	<key>NSScreenCaptureUsageDescription</key>
-	<string>SimpleSHOT needs Screen Recording permission to capture your screen for annotation.</string>
+	<string>Pashatt needs Screen Recording permission to capture your screen for annotation.</string>
 </dict>
 </plist>

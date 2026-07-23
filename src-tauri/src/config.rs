@@ -55,12 +55,27 @@ impl Default for AppSettings {
     }
 }
 
+fn config_dir() -> PathBuf {
+    let base = dirs_next::config_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
+    let new_dir = base.join("pashatt");
+    let legacy_dir = base.join("simpleshot");
+
+    // One-time migration from SimpleSHOT → Pashatt
+    if !new_dir.exists() {
+        let legacy_settings = legacy_dir.join("settings.json");
+        if legacy_settings.is_file() {
+            if std::fs::create_dir_all(&new_dir).is_ok() {
+                let _ = std::fs::copy(&legacy_settings, new_dir.join("settings.json"));
+            }
+        }
+    }
+
+    std::fs::create_dir_all(&new_dir).ok();
+    new_dir
+}
+
 fn config_path() -> PathBuf {
-    let config_dir = dirs_next::config_dir()
-        .unwrap_or_else(|| PathBuf::from("/tmp"))
-        .join("simpleshot");
-    std::fs::create_dir_all(&config_dir).ok();
-    config_dir.join("settings.json")
+    config_dir().join("settings.json")
 }
 
 pub fn load_settings() -> AppSettings {

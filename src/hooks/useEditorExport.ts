@@ -106,7 +106,7 @@ export function useEditorExport({
       const hh = now.getHours().toString().padStart(2, "0");
       const mm = now.getMinutes().toString().padStart(2, "0");
       const ss = now.getSeconds().toString().padStart(2, "0");
-      const filename = `simpleshot-${yyyy}${mo}${dd}-${hh}${mm}${ss}.${ext}`;
+      const filename = `pashatt-${yyyy}${mo}${dd}-${hh}${mm}${ss}.${ext}`;
       const fullPath = `${dir}/${filename}`;
 
       await saveImage(b64, fullPath);

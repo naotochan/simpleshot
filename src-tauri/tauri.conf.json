@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "SimpleSHOT",
-  "version": "0.0.60",
-  "identifier": "com.bookair.simpleshot",
+  "productName": "Pashatt",
+  "version": "0.1.0",
+  "identifier": "com.bookair.pashatt",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "settings",
-        "title": "SimpleSHOT",
+        "title": "Pashatt",
         "url": "/?view=settings",
         "width": 760,
         "height": 520,
@@ -40,7 +40,7 @@
       {
         "label": "editor",
         "url": "/?view=editor",
-        "title": "SimpleSHOT",
+        "title": "Pashatt",
         "width": 1280,
         "height": 800,
         "visible": false,

@@ -138,7 +138,7 @@ async fn copy_to_clipboard(_app: AppHandle, base64_data: String, ext: String) ->
     )
     .map_err(|e| format!("base64 decode error: {}", e))?;
 
-    let tmp = std::env::temp_dir().join(format!("simpleshot_export.{}", ext));
+    let tmp = std::env::temp_dir().join(format!("pashatt_export.{}", ext));
     std::fs::write(&tmp, bytes).map_err(|e| e.to_string())?;
     capture::copy_image_to_clipboard(&tmp)
 }
@@ -286,7 +286,7 @@ pub fn run() {
             }
 
             // タイトルバーにバージョンを表示（設定・エディタ）
-            let titled = format!("SimpleSHOT {}", env!("CARGO_PKG_VERSION"));
+            let titled = format!("Pashatt {}", env!("CARGO_PKG_VERSION"));
             for label in ["settings", "editor"] {
                 if let Some(win) = app.get_webview_window(label) {
                     let _ = win.set_title(&titled);

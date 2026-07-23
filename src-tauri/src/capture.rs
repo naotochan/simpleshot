@@ -8,7 +8,7 @@ pub fn tmp_path() -> PathBuf {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
         .as_nanos();
-    std::env::temp_dir().join(format!("simpleshot_{}.png", id))
+    std::env::temp_dir().join(format!("pashatt_{}.png", id))
 }
 
 /// 範囲キャプチャ: screencapture -x -R "x,y,w,h" /tmp/...
@@ -86,8 +86,8 @@ pub async fn capture_window_by_id(window_id: u32, show_cursor: bool) -> Result<P
 fn ensure_not_blackout(path: &Path) -> Result<(), String> {
     if is_mostly_black(path) {
         Err(
-            "Screen capture returned a blank image. Quit SimpleSHOT completely, \
-             toggle Screen Recording off/on for SimpleSHOT in System Settings, \
+            "Screen capture returned a blank image. Quit Pashatt completely, \
+             toggle Screen Recording off/on for Pashatt in System Settings, \
              then relaunch the app."
                 .into(),
         )
@@ -226,7 +226,7 @@ guard let list = CGWindowListCopyWindowInfo(opts, kCGNullWindowID) as? [[String:
 }
 struct Rect { var x: Int; var y: Int; var w: Int; var h: Int }
 var candidates: [(info: [String: Any], rect: Rect)] = []
-let exclude = Set(["SimpleSHOT", "Dock", "Window Server"])
+let exclude = Set(["Pashatt", "SimpleSHOT", "Dock", "Window Server"])
 for w in list {
     let layer = (w[kCGWindowLayer as String] as? NSNumber)?.intValue ?? 99
     if layer != 0 { continue }

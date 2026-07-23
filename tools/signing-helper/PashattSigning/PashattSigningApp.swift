@@ -1,10 +1,10 @@
 import SwiftUI
 
 @main
-struct SimpleSHOTSigningApp: App {
+struct PashattSigningApp: App {
     var body: some Scene {
         WindowGroup {
-            Text("SimpleSHOT signing helper — Team を選んで閉じてもOK")
+            Text("Pashatt signing helper — Team を選んで閉じてもOK")
                 .padding(40)
         }
     }

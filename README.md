@@ -1,11 +1,11 @@
-# SimpleSHOT
+# Pashatt（パシャッ）
 
 macOS 向けのスクリーンショット & アノテーションツール。
 
 スクショ撮って、ちょっとだけアノテーションして、すぐに共有できる。軽量でシンプルなスクショアプリです。
 
 <p align="center">
-  <img src="docs/demo/editor.png" alt="SimpleSHOT — ポートフォリオ Apps 画面" width="900" />
+  <img src="docs/demo/editor.png" alt="Pashatt — ポートフォリオ Apps 画面" width="900" />
 </p>
 
 アプリを起動すると常駐し、`Cmd+Shift+Space` でキャプチャを開始します。
@@ -22,19 +22,19 @@ MIT
 
 ---
 
-# SimpleSHOT
+# Pashatt
 
 A lightweight screenshot & annotation app for macOS.
 
 Capture, add a quick annotation, and share — nothing more than you need.
 
 <p align="center">
-  <img src="docs/demo/editor.png" alt="SimpleSHOT on the portfolio Apps section" width="900" />
+  <img src="docs/demo/editor.png" alt="Pashatt on the portfolio Apps section" width="900" />
 </p>
 
 It stays in the menu bar. Press `Cmd+Shift+Space` to start a capture.
 
-SimpleSHOT is free.
+Pashatt is free.
 
 ## License
 

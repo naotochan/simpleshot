@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 署名 identity を選び、tauri.conf.json の signingIdentity / hardenedRuntime を合わせる。
 # 優先: Apple Development（Team ID あり → Sequoia+ の画面収録に必要）
-# フォールバック: SimpleSHOT Dev（自己署名・Team ID なし → Hardened Runtime を切る）
+# フォールバック: Pashatt Dev（自己署名・Team ID なし → Hardened Runtime を切る）
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -18,7 +18,7 @@ if [[ -n "$APPLE_DEV" ]]; then
   HARDENED=true
   echo "→ 署名: $IDENTITY (Hardened Runtime ON / Team ID あり)"
 else
-  IDENTITY="SimpleSHOT Dev"
+  IDENTITY="Pashatt Dev"
   HARDENED=false
   echo "→ 署名: $IDENTITY (Hardened Runtime OFF — Team ID 無しのため)"
   echo "  推奨: Xcode → Settings → Accounts で無料 Apple ID を追加すると"
