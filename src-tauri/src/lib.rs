@@ -1,6 +1,8 @@
 mod capture;
 mod config;
+mod history;
 mod tray;
+mod updater;
 
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
@@ -58,9 +60,7 @@ async fn show_overlay(app: AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 async fn hide_overlay(app: AppHandle) -> Result<(), String> {
-    if let Some(win) = app.get_webview_window("overlay") {
-        let _ = win.hide();
-    }
+    hide_overlay_hard(&app);
     #[cfg(target_os = "macos")]
     {
         // キャプチャ UI を閉じたら Dock 非表示の Accessory に戻す
@@ -69,27 +69,61 @@ async fn hide_overlay(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-fn hide_for_capture(app: &AppHandle) {
+/// alwaysOnTop 透過窓は hide だけでは残像が残ることがあるので、先に alwaysOnTop を外す
+fn hide_overlay_hard(app: &AppHandle) {
     if let Some(win) = app.get_webview_window("overlay") {
+        let _ = win.set_always_on_top(false);
         let _ = win.hide();
-    }
-    if let Some(editor) = app.get_webview_window("editor") {
-        let _ = editor.hide();
-    }
-    #[cfg(target_os = "macos")]
-    {
-        let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
     }
 }
 
-/// キャプチャ成功後: クリップボードへコピーしてからエディタを開く
+fn hide_for_capture(app: &AppHandle) {
+    hide_overlay_hard(app);
+    if let Some(editor) = app.get_webview_window("editor") {
+        let _ = editor.hide();
+    }
+}
+
+/// NSPasteboard はメインスレッド専用。tokio ワーカーから直接 arboard すると失敗／空振りする。
+fn copy_image_on_main_thread(app: &AppHandle, path: &std::path::Path) -> Result<(), String> {
+    let path = path.to_path_buf();
+    let (tx, rx) = std::sync::mpsc::channel();
+    app.run_on_main_thread(move || {
+        let result = capture::copy_image_to_clipboard(&path);
+        let _ = tx.send(result);
+    })
+    .map_err(|e| format!("run_on_main_thread: {}", e))?;
+    rx.recv()
+        .map_err(|e| format!("clipboard channel: {}", e))?
+}
+
+/// キャプチャ成功後: クリップボードへコピー → 履歴保存 → エディタを開く
 fn finish_capture(app: &AppHandle, path: &std::path::Path) -> Result<(), String> {
-    if let Err(e) = capture::copy_image_to_clipboard(path) {
+    // キャプチャ待ちのあいだに残像が出ないよう再 hide
+    hide_overlay_hard(app);
+
+    if let Err(e) = copy_image_on_main_thread(app, path) {
         eprintln!("[clipboard] auto-copy failed: {}", e);
     }
     let (b64, w, h) = capture::load_as_base64(path)?;
+    if let Err(e) = history::add_capture(path, w, h) {
+        eprintln!("[history] save failed: {}", e);
+    } else {
+        tray::refresh_menu(app);
+    }
     open_editor_with_image(app, b64, w, h);
     Ok(())
+}
+
+pub fn copy_history_item(app: &AppHandle, id: &str) {
+    match history::path_for_id(id) {
+        Some(path) => {
+            if let Err(e) = copy_image_on_main_thread(app, &path) {
+                eprintln!("[history] copy failed: {e}");
+            }
+        }
+        None => eprintln!("[history] item not found: {id}"),
+    }
 }
 
 #[tauri::command]
@@ -129,7 +163,7 @@ async fn capture_window_by_id(app: AppHandle, state: State<'_, AppState>, window
 }
 
 #[tauri::command]
-async fn copy_to_clipboard(_app: AppHandle, base64_data: String, ext: String) -> Result<(), String> {
+async fn copy_to_clipboard(app: AppHandle, base64_data: String, ext: String) -> Result<(), String> {
     // ext をホワイトリスト検証
     if ext != "png" && ext != "jpg" {
         return Err(format!("unsupported format: {}", ext));
@@ -143,7 +177,7 @@ async fn copy_to_clipboard(_app: AppHandle, base64_data: String, ext: String) ->
 
     let tmp = std::env::temp_dir().join(format!("pashatt_export.{}", ext));
     std::fs::write(&tmp, bytes).map_err(|e| e.to_string())?;
-    capture::copy_image_to_clipboard(&tmp)
+    copy_image_on_main_thread(&app, &tmp)
 }
 
 #[tauri::command]
@@ -176,11 +210,23 @@ fn open_accessibility_preferences(_app: AppHandle) {
         .spawn();
 }
 
+#[tauri::command]
+async fn check_for_updates_cmd(app: AppHandle) -> Result<(), String> {
+    updater::check_for_updates(&app, true).await;
+    Ok(())
+}
+
 // ============================================================
 // ヘルパー
 // ============================================================
 
 fn open_editor_with_image(app: &AppHandle, b64: String, width: u32, height: u32) {
+    hide_overlay_hard(app);
+    #[cfg(target_os = "macos")]
+    {
+        // エディタにフォーカスを渡してオーバーレイ残像を消す
+        let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
+    }
     if let Some(win) = app.get_webview_window("editor") {
         let _ = win.show();
         let _ = win.set_focus();
@@ -190,6 +236,10 @@ fn open_editor_with_image(app: &AppHandle, b64: String, width: u32, height: u32)
             "height": height,
         });
         let _ = win.emit("capture-complete", payload);
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
     }
 }
 
@@ -246,6 +296,7 @@ fn show_overlay_window(app: &AppHandle) {
     }
     if let Some(win) = app.get_webview_window("overlay") {
         fit_overlay_to_screen(app, &win);
+        let _ = win.set_always_on_top(true);
         let _ = win.show();
         let _ = win.set_focus();
     }
@@ -293,6 +344,9 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             #[cfg(target_os = "macos")]
             {
@@ -314,6 +368,13 @@ pub fn run() {
                 eprintln!("Hotkey registration error: {}", e);
             }
 
+            // 起動時にサイレント更新チェック（差分があればダイアログ）
+            let app_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                updater::check_for_updates(&app_handle, false).await;
+            });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -331,6 +392,7 @@ pub fn run() {
             check_accessibility_permission,
             open_system_preferences,
             open_accessibility_preferences,
+            check_for_updates_cmd,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

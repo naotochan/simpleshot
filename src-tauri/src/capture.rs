@@ -106,8 +106,25 @@ pub fn load_as_base64(path: &Path) -> Result<(String, u32, u32), String> {
     Ok((b64, width, height))
 }
 
-/// 画像をクリップボードにコピー (RGBAバイト列が必要)
+/// 画像をクリップボードにコピー。
+/// macOS の PNG は osascript（«class PNGf»）を優先 — NSPasteboard 直叩きより安定。
+/// それ以外は arboard（メインスレッドから呼ぶこと）。
 pub fn copy_image_to_clipboard(path: &Path) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        let is_png = path
+            .extension()
+            .and_then(|s| s.to_str())
+            .map(|s| s.eq_ignore_ascii_case("png"))
+            .unwrap_or(false);
+        if is_png {
+            match copy_png_via_osascript(path) {
+                Ok(()) => return Ok(()),
+                Err(e) => eprintln!("[clipboard] osascript failed, trying arboard: {}", e),
+            }
+        }
+    }
+
     let bytes = std::fs::read(path).map_err(|e| format!("read error: {}", e))?;
     let img = image::load_from_memory(&bytes)
         .map_err(|e| format!("image error: {}", e))?
@@ -124,6 +141,28 @@ pub fn copy_image_to_clipboard(path: &Path) -> Result<(), String> {
             bytes: rgba_bytes.into(),
         })
         .map_err(|e| e.to_string())
+}
+
+/// macOS: PNG ファイルを «class PNGf» で Pasteboard に載せる
+#[cfg(target_os = "macos")]
+fn copy_png_via_osascript(path: &Path) -> Result<(), String> {
+    let path_str = path.to_string_lossy();
+    let escaped = path_str.replace('\\', "\\\\").replace('"', "\\\"");
+    let script = format!(
+        r#"set the clipboard to (read (POSIX file "{}") as «class PNGf»)"#,
+        escaped
+    );
+    let output = Command::new("/usr/bin/osascript")
+        .args(["-e", &script])
+        .output()
+        .map_err(|e| format!("osascript failed: {}", e))?;
+    if !output.status.success() {
+        return Err(format!(
+            "osascript error: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    Ok(())
 }
 
 /// base64データをファイルに保存（パストラバーサル防止付き）

@@ -25,6 +25,9 @@
     "store:allow-load",
     "store:allow-set",
     "store:allow-get",
-    "store:allow-save"
+    "store:allow-save",
+    "updater:default",
+    "process:default",
+    "dialog:default"
   ]
 }

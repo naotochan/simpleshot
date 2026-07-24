@@ -258,12 +258,13 @@ export default function Overlay() {
     if (modeRef.current === "window") {
       const win = hoveredWinRef.current;
       if (win) {
+        resetToDefault();
         try {
+          await hideOverlay();
           await captureWindowById(win.id);
         } catch {
           /* ignore */
         }
-        resetToDefault();
       }
       return;
     }
@@ -304,16 +305,21 @@ export default function Overlay() {
 
     draggingRef.current = false;
     dragRef.current = null;
+    resetToDefault();
 
-    if (w > 10 && h > 10) {
-      captureRegion(Math.round(x), Math.round(y), Math.round(w), Math.round(h)).catch(
-        () => {}
-      );
-      resetToDefault();
-    } else {
-      doCaptureFullscreen().catch(() => {});
-      resetToDefault();
-    }
+    // 先にオーバーレイを隠してからキャプチャ（残像・再描画を防ぐ）
+    void (async () => {
+      try {
+        await hideOverlay();
+        if (w > 10 && h > 10) {
+          await captureRegion(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+        } else {
+          await doCaptureFullscreen();
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
   };
 
   return (

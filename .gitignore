@@ -29,3 +29,7 @@ dist-ssr
 .claude/
 CLAUDE.md
 tasks/
+
+# Updater signing private keys (never commit)
+*.key
+!.tauri/*.key.pub

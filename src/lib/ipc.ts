@@ -83,6 +83,9 @@ export const openSystemPreferences = (): Promise<void> =>
 export const openAccessibilityPreferences = (): Promise<void> =>
   invoke("open_accessibility_preferences");
 
+export const checkForUpdates = (): Promise<void> =>
+  invoke("check_for_updates_cmd");
+
 // ============================================================
 // イベントリスナー
 // ============================================================

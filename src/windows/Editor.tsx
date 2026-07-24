@@ -161,7 +161,7 @@ export default function Editor() {
       history.resetHistory([]);
       panZoom.resetView();
       crop.clearCropRegion();
-      setStatus(t("Editing", "編集中"));
+      setStatus(t("Copied · Editing", "コピー済み · 編集中"));
     }).then((fn) => {
       unlisten = fn;
     });

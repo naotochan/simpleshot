@@ -6,10 +6,12 @@ import {
   checkAccessibilityPermission,
   openSystemPreferences,
   openAccessibilityPreferences,
+  checkForUpdates,
   type AppSettings,
 } from "../lib/ipc";
 import { DEFAULT_SETTINGS } from "../lib/AppChromeProvider";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getVersion } from "@tauri-apps/api/app";
 import {
   useLocalization,
   type AppLanguage,
@@ -34,7 +36,7 @@ const CATEGORIES: SettingsCategory[] = ["general", "permissions", "shortcuts", "
 function categorySearchBlob(id: SettingsCategory): string {
   switch (id) {
     case "general":
-      return "appearance theme language 外観 テーマ 言語 system light dark english japanese";
+      return "appearance theme language update 外観 テーマ 言語 アップデート 更新 system light dark english japanese";
     case "permissions":
       return "permissions screen recording accessibility 権限 スクリーン録画 アクセシビリティ";
     case "shortcuts":
@@ -53,6 +55,7 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
   const [category, setCategory] = useState<SettingsCategory>("general");
   const [searchText, setSearchText] = useState("");
+  const [appVersion, setAppVersion] = useState("");
 
   const chromeKey = `${language}-${appearance}`;
 
@@ -103,6 +106,7 @@ export default function Settings() {
   }, []);
 
   useEffect(() => {
+    getVersion().then(setAppVersion).catch(() => setAppVersion(""));
     getSettings()
       .then((s) =>
         setSettings({
@@ -196,6 +200,7 @@ export default function Settings() {
             </h2>
 
             {category === "general" && (
+              <>
               <Section title={t("Appearance", "外観")}>
                 <SettingRow
                   title={t("Theme", "テーマ")}
@@ -234,6 +239,23 @@ export default function Settings() {
                   />
                 </SettingRow>
               </Section>
+              <Section title={t("Updates", "アップデート")}>
+                <SettingRow
+                  title={t("Version", "バージョン")}
+                  subtitle={appVersion ? `Pashatt ${appVersion}` : "Pashatt"}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void checkForUpdates();
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-sm bg-tb-raised border border-tb-border text-tb-text hover:bg-tb-hover transition-colors"
+                  >
+                    Check for Updates… / アップデートを確認…
+                  </button>
+                </SettingRow>
+              </Section>
+              </>
             )}
 
             {category === "permissions" && (
