@@ -26,6 +26,7 @@ interface UseCropOpts {
   annotationsRef: MutableRefObject<Annotation[]>;
   sizeMul: number;
   setStatus: (s: string) => void;
+  t: (english: string, japanese: string) => string;
 }
 
 export function useCrop({
@@ -46,6 +47,7 @@ export function useCrop({
   annotationsRef,
   sizeMul,
   setStatus,
+  t,
 }: UseCropOpts) {
   const [cropRegion, setCropRegion] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const [cropDrawing, setCropDrawing] = useState(false);
@@ -103,8 +105,8 @@ export function useCrop({
     setImageData(imgCanvas.toDataURL("image/png"));
     setCropRegion(null);
     setCurrentTool("arrow");
-    setStatus("トリミングしました");
-    setTimeout(() => setStatus("編集中"), 2000);
+    setStatus(t("Cropped", "トリミングしました"));
+    setTimeout(() => setStatus(t("Editing", "編集中")), 2000);
   }, [
     cropRegion,
     imageData,
@@ -118,6 +120,7 @@ export function useCrop({
     setImageData,
     setCurrentTool,
     setStatus,
+    t,
   ]);
 
   const handleCropCancel = useCallback(() => {
@@ -134,9 +137,9 @@ export function useCrop({
     resetHistory(preCropState.annotations);
     setImgSize(preCropState.imgSize);
     setPreCropState(null);
-    setStatus("トリミングを元に戻しました");
-    setTimeout(() => setStatus("編集中"), 2000);
-  }, [preCropState, setImageData, resetHistory, setImgSize, setStatus]);
+    setStatus(t("Crop reverted", "トリミングを元に戻しました"));
+    setTimeout(() => setStatus(t("Editing", "編集中")), 2000);
+  }, [preCropState, setImageData, resetHistory, setImgSize, setStatus, t]);
 
   useEffect(() => {
     if (currentTool !== "crop") return;
@@ -179,7 +182,7 @@ export function useCrop({
       cropRegion.w,
       cropRegion.h
     );
-    ctx.strokeStyle = "#3b82f6";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
     ctx.lineWidth = 2 * sizeMul;
     ctx.setLineDash([6 * sizeMul, 3 * sizeMul]);
     ctx.strokeRect(cropRegion.x, cropRegion.y, cropRegion.w, cropRegion.h);

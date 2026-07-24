@@ -1,8 +1,15 @@
 import { describe, it, expect, vi } from "vitest";
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SizeControl } from "./SizeControl";
+import { LocalizationProviderStandalone } from "../../lib/localization";
+
+function renderJa(ui: ReactElement) {
+  return render(
+    <LocalizationProviderStandalone initialLanguage="japanese">{ui}</LocalizationProviderStandalone>
+  );
+}
 
 function StatefulSizeControl({
   initial,
@@ -27,20 +34,20 @@ function StatefulSizeControl({
 
 describe("SizeControl", () => {
   it("shows px unit next to the size value", () => {
-    render(<SizeControl tool="pen" size={8} color="#ff0000" onChange={vi.fn()} />);
+    renderJa(<SizeControl tool="pen" size={8} color="#ff0000" onChange={vi.fn()} />);
     expect(screen.getByText("px")).toBeInTheDocument();
     expect(screen.getByLabelText("太さの数値")).toHaveValue(8);
   });
 
   it("shows effective size hint for highlighter", () => {
-    render(<SizeControl tool="highlighter" size={4} color="#ffff00" onChange={vi.fn()} />);
+    renderJa(<SizeControl tool="highlighter" size={4} color="#ffff00" onChange={vi.fn()} />);
     expect(screen.getByText("ハイライト")).toBeInTheDocument();
     expect(screen.getByText("→ 32px")).toBeInTheDocument();
   });
 
   it("shows a live size preview bubble while dragging the slider", async () => {
     const user = userEvent.setup();
-    render(<SizeControl tool="pen" size={8} color="#ff3b30" onChange={vi.fn()} />);
+    renderJa(<SizeControl tool="pen" size={8} color="#ff3b30" onChange={vi.fn()} />);
     const slider = screen.getByLabelText("太さ（画像ピクセル）");
     await user.pointer({ keys: "[MouseLeft>]", target: slider });
     expect(screen.getByRole("status")).toHaveTextContent("8px");
@@ -49,7 +56,7 @@ describe("SizeControl", () => {
   it("clamps numeric input to the brush size range", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
-    render(<StatefulSizeControl initial={8} onChange={onChange} />);
+    renderJa(<StatefulSizeControl initial={8} onChange={onChange} />);
 
     const input = screen.getByLabelText("太さの数値");
     await user.clear(input);

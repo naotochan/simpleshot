@@ -1,19 +1,19 @@
 [package]
-name = "simpleshot"
-version = "0.0.48"
-description = "SimpleSHOT - macOS Screenshot App"
+name = "pashatt"
+version = "0.1.1"
+description = "Pashatt - macOS Screenshot App"
 authors = ["you"]
 edition = "2021"
 
 [lib]
-name = "simpleshot_lib"
+name = "pashatt_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["macos-private-api", "tray-icon"] }
+tauri = { version = "2", features = ["macos-private-api", "tray-icon", "image-png"] }
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-store = "2"

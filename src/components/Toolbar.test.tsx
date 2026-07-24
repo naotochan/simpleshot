@@ -1,8 +1,15 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactElement } from "react";
 import Toolbar, { type Tool } from "./Toolbar";
+import { LocalizationProviderStandalone } from "../lib/localization";
+
+function renderToolbar(ui: ReactElement) {
+  return render(
+    <LocalizationProviderStandalone initialLanguage="japanese">{ui}</LocalizationProviderStandalone>
+  );
+}
 
 function createProps(overrides: Partial<ComponentProps<typeof Toolbar>> = {}) {
   const base: ComponentProps<typeof Toolbar> = {
@@ -71,7 +78,7 @@ describe("Toolbar", () => {
   it("calls onToolChange when a tool button is clicked", async () => {
     const user = userEvent.setup();
     const props = createProps();
-    render(<Toolbar {...props} />);
+    renderToolbar(<Toolbar {...props} />);
 
     await user.click(screen.getByTitle("ペン"));
 
@@ -110,7 +117,7 @@ describe("Toolbar", () => {
         onShapeFilledChange: vi.fn(),
       },
     });
-    render(<Toolbar {...props} />);
+    renderToolbar(<Toolbar {...props} />);
 
     expect(screen.getByTitle("スロットが満杯です")).toBeDisabled();
   });
@@ -138,7 +145,7 @@ describe("Toolbar", () => {
         onRevert: vi.fn(),
       },
     });
-    render(<Toolbar {...props} />);
+    renderToolbar(<Toolbar {...props} />);
 
     expect(screen.getByRole("button", { name: "適用" })).toBeDisabled();
   });
@@ -159,7 +166,7 @@ describe("Toolbar", () => {
         onShapeFilledChange: vi.fn(),
       },
     });
-    render(<Toolbar {...props} />);
+    renderToolbar(<Toolbar {...props} />);
     expect(screen.queryByText("太さ")).not.toBeInTheDocument();
   });
 });

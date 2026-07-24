@@ -6,6 +6,7 @@ import {
   effectiveSizeFromBrush,
   sizeControlLabel,
 } from "../../lib/brushSize";
+import { useLocalization } from "../../lib/localization";
 
 interface SizeControlProps {
   tool: Tool;
@@ -73,9 +74,12 @@ function SizePreviewBubble({
 }
 
 export function SizeControl({ tool, size, color, onChange }: SizeControlProps) {
+  const { t } = useLocalization();
   const [previewing, setPreviewing] = useState(false);
   const effective = effectiveSizeFromBrush(tool, size);
   const showEffectiveHint = effective !== size;
+  const label = sizeControlLabel(tool, t);
+  const pxHint = t("image pixels", "画像ピクセル");
 
   useEffect(() => {
     if (!previewing) return;
@@ -89,9 +93,9 @@ export function SizeControl({ tool, size, color, onChange }: SizeControlProps) {
   }, [previewing]);
 
   return (
-    <div className="tool-group relative" title="画像のピクセル単位">
+    <div className="tool-group relative" title={t("Image pixels", "画像のピクセル単位")}>
       <span className="text-[11px] font-medium text-tb-text-sub tracking-wide uppercase px-1">
-        {sizeControlLabel(tool)}
+        {label}
       </span>
       <input
         type="range"
@@ -104,7 +108,7 @@ export function SizeControl({ tool, size, color, onChange }: SizeControlProps) {
           onChange(Number(e.target.value));
         }}
         className="slider-tb w-24"
-        aria-label={`${sizeControlLabel(tool)}（画像ピクセル）`}
+        aria-label={`${label}（${pxHint}）`}
       />
       <div className="flex items-center gap-0.5">
         <input
@@ -122,13 +126,13 @@ export function SizeControl({ tool, size, color, onChange }: SizeControlProps) {
             onChange(v);
           }}
           className="w-10 bg-tb-base text-tb-text text-[11px] font-mono tabular-nums text-center rounded-md border border-tb-border px-1 py-0.5 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-          aria-label={`${sizeControlLabel(tool)}の数値`}
+          aria-label={t(`${label} value`, `${label}の数値`)}
         />
         <span className="text-[11px] font-mono text-tb-text-dim">px</span>
         {showEffectiveHint && (
           <span
             className="text-[10px] font-mono text-tb-text-dim ml-0.5 whitespace-nowrap"
-            title="実際の描画サイズ"
+            title={t("Actual draw size", "実際の描画サイズ")}
           >
             → {effective}px
           </span>

@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
-# SimpleSHOT 開発用の自己署名 Code Signing 証明書を一度だけ作成する。
+# Pashatt 開発用の自己署名 Code Signing 証明書を一度だけ作成する。
 # 同じ identity で署名すると、画面収録などの TCC 権限が再ビルド後も維持される。
 # 費用ゼロ・Apple Developer プログラム不要。
+#
+# 注意 (macOS Sequoia / 26+):
+# 自己署名には Team ID が無い。設定で画面収録を許可しても黒画像になる場合は、
+# Xcode に無料 Apple ID でサインインし「Apple Development」証明書を作り、
+# tauri.conf.json の signingIdentity をその名前に切り替えてください。
 set -euo pipefail
 
-IDENTITY_NAME="SimpleSHOT Dev"
+IDENTITY_NAME="Pashatt Dev"
 KEYCHAIN="${HOME}/Library/Keychains/login.keychain-db"
 if [[ ! -f "$KEYCHAIN" ]]; then
   KEYCHAIN="${HOME}/Library/Keychains/login.keychain"
@@ -27,7 +32,7 @@ if security find-identity -p codesigning 2>/dev/null | grep -q "\"${IDENTITY_NAM
     echo "✓ 完了: ${IDENTITY_NAME}"
     exit 0
   fi
-  echo "✗ 信頼の付与に失敗しました。Keychain Access で「SimpleSHOT Dev」を削除してから再実行してください。"
+  echo "✗ 信頼の付与に失敗しました。Keychain Access で「Pashatt Dev」を削除してから再実行してください。"
   exit 1
 fi
 
@@ -44,8 +49,8 @@ prompt = no
 x509_extensions = extensions
 
 [req_distinguished_name]
-CN = SimpleSHOT Dev
-O = SimpleSHOT Local Dev
+CN = Pashatt Dev
+O = Pashatt Local Dev
 C = JP
 
 [extensions]
@@ -55,18 +60,18 @@ extendedKeyUsage = critical,codeSigning
 subjectKeyIdentifier = hash
 EOF
 
-KEY="${TMPDIR_CERT}/simpleshot-dev.key"
-CRT="${TMPDIR_CERT}/simpleshot-dev.crt"
-P12="${TMPDIR_CERT}/simpleshot-dev.p12"
-PASS="simpleshot-dev-local"
+KEY="${TMPDIR_CERT}/pashatt-dev.key"
+CRT="${TMPDIR_CERT}/pashatt-dev.crt"
+P12="${TMPDIR_CERT}/pashatt-dev.p12"
+PASS="pashatt-dev-local"
 
 openssl req -new -newkey rsa:2048 -nodes \
   -keyout "$KEY" \
-  -out "${TMPDIR_CERT}/simpleshot-dev.csr" \
+  -out "${TMPDIR_CERT}/pashatt-dev.csr" \
   -config "$CONF"
 
 openssl x509 -req \
-  -in "${TMPDIR_CERT}/simpleshot-dev.csr" \
+  -in "${TMPDIR_CERT}/pashatt-dev.csr" \
   -signkey "$KEY" \
   -out "$CRT" \
   -days 3650 \
@@ -115,4 +120,4 @@ echo "  1. npm run tauri:build"
 echo "  2. 生成された .app を一度起動し、画面収録を許可（この1回だけ）"
 echo "  3. 以降は同じ証明書で署名されるので、再ビルドしても権限は維持されます"
 echo ""
-echo "古い ad-hoc 版の SimpleSHOT が設定に残っている場合は削除してから許可し直してください。"
+echo "古い ad-hoc 版や SimpleSHOT が設定に残っている場合は削除してから許可し直してください。"

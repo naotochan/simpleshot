@@ -7,6 +7,7 @@ import {
   captureWindowById,
   type WindowInfo,
 } from "../lib/ipc";
+import { useLocalization } from "../lib/localization";
 
 type Mode = "region" | "window";
 
@@ -15,6 +16,17 @@ interface DragState {
   startY: number;
   endX: number;
   endY: number;
+}
+
+/**
+ * macOS の transparent NSWindow は alpha≈0 の画素をクリックスルーする。
+ * clearRect の代わりに極小 alpha で塗り、見た目は通しつつヒットを確保する。
+ */
+const HIT_CUTOUT = "rgba(0, 0, 0, 0.01)";
+
+function cutOut(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+  ctx.fillStyle = HIT_CUTOUT;
+  ctx.fillRect(x, y, w, h);
 }
 
 function hitTestFrontmost(
@@ -51,6 +63,7 @@ function rectIntersection(
 }
 
 export default function Overlay() {
+  const { t } = useLocalization();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const modeRef = useRef<Mode>("region");
   const windowsRef = useRef<WindowInfo[]>([]);
@@ -96,7 +109,7 @@ export default function Overlay() {
         const w = Math.abs(drag.endX - drag.startX);
         const h = Math.abs(drag.endY - drag.startY);
 
-        ctx.clearRect(x, y, w, h);
+        cutOut(ctx, x, y, w, h);
 
         ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
         ctx.lineWidth = 1.5;
@@ -128,7 +141,7 @@ export default function Overlay() {
 
       if (win) {
         const { x, y, w, h } = win;
-        ctx.clearRect(x, y, w, h);
+        cutOut(ctx, x, y, w, h);
 
         const wins = windowsRef.current;
         const idx = wins.findIndex((winfo) => winfo.id === win.id);
@@ -324,9 +337,9 @@ export default function Overlay() {
       >
         {mode === "window"
           ? hoveredWin
-            ? `${hoveredWin.name}  ｜  クリック: キャプチャ  ｜  Esc: 戻る`
-            : `ウィンドウを選択 (${windows.length}件)  ｜  クリック: キャプチャ  ｜  Esc: 戻る`
-          : "ドラッグ: 範囲選択  ｜  クリック: 全画面  ｜  Space: ウィンドウ選択  ｜  Esc: 閉じる"}
+            ? `${hoveredWin.name}  ｜  ${t("Click: Capture", "クリック: キャプチャ")}  ｜  Esc: ${t("Back", "戻る")}`
+            : `${t("Select a window", "ウィンドウを選択")} (${windows.length})  ｜  ${t("Click: Capture", "クリック: キャプチャ")}  ｜  Esc: ${t("Back", "戻る")}`
+          : `${t("Drag: Region", "ドラッグ: 範囲選択")}  ｜  ${t("Click: Full screen", "クリック: 全画面")}  ｜  Space: ${t("Window select", "ウィンドウ選択")}  ｜  Esc: ${t("Close", "閉じる")}`}
       </div>
     </div>
   );

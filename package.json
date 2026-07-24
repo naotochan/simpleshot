@@ -1,15 +1,15 @@
 {
-  "name": "simpleshot",
+  "name": "pashatt",
   "private": true,
-  "version": "0.0.48",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "setup:signing": "bash scripts/setup-dev-signing.sh",
-    "tauri:build": "bash scripts/setup-dev-signing.sh && tauri build",
+    "setup:signing": "bash scripts/setup-dev-signing.sh && bash scripts/resolve-signing-identity.sh",
+    "tauri:build": "bash scripts/setup-dev-signing.sh && bash scripts/resolve-signing-identity.sh && tauri build",
     "test": "vitest run",
     "test:watch": "vitest"
   },

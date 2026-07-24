@@ -1,4 +1,4 @@
-# SimpleSHOT TODOs
+# Pashatt TODOs
 
 | # | Priority | Task | Cost | Details | Status |
 |---|----------|------|------|---------|--------|

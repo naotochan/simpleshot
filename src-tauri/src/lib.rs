@@ -52,11 +52,7 @@ fn save_settings(
 
 #[tauri::command]
 async fn show_overlay(app: AppHandle) -> Result<(), String> {
-    if let Some(win) = app.get_webview_window("overlay") {
-        fit_overlay_to_screen(&app, &win);
-        let _ = win.show();
-        let _ = win.set_focus();
-    }
+    show_overlay_window(&app);
     Ok(())
 }
 
@@ -65,6 +61,34 @@ async fn hide_overlay(app: AppHandle) -> Result<(), String> {
     if let Some(win) = app.get_webview_window("overlay") {
         let _ = win.hide();
     }
+    #[cfg(target_os = "macos")]
+    {
+        // キャプチャ UI を閉じたら Dock 非表示の Accessory に戻す
+        let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+    }
+    Ok(())
+}
+
+fn hide_for_capture(app: &AppHandle) {
+    if let Some(win) = app.get_webview_window("overlay") {
+        let _ = win.hide();
+    }
+    if let Some(editor) = app.get_webview_window("editor") {
+        let _ = editor.hide();
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+    }
+}
+
+/// キャプチャ成功後: クリップボードへコピーしてからエディタを開く
+fn finish_capture(app: &AppHandle, path: &std::path::Path) -> Result<(), String> {
+    if let Err(e) = capture::copy_image_to_clipboard(path) {
+        eprintln!("[clipboard] auto-copy failed: {}", e);
+    }
+    let (b64, w, h) = capture::load_as_base64(path)?;
+    open_editor_with_image(app, b64, w, h);
     Ok(())
 }
 
@@ -78,31 +102,17 @@ async fn capture_region(
     height: u32,
 ) -> Result<(), String> {
     let show_cursor = state.settings.lock().unwrap_or_else(|e| e.into_inner()).show_cursor;
-    if let Some(win) = app.get_webview_window("overlay") {
-        let _ = win.hide();
-    }
-    if let Some(editor) = app.get_webview_window("editor") {
-        let _ = editor.hide();
-    }
+    hide_for_capture(&app);
     let path = capture::capture_region(x, y, width, height, show_cursor).await?;
-    let (b64, w, h) = capture::load_as_base64(&path)?;
-    open_editor_with_image(&app, b64, w, h);
-    Ok(())
+    finish_capture(&app, &path)
 }
 
 #[tauri::command]
 async fn do_capture_fullscreen(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
     let show_cursor = state.settings.lock().unwrap_or_else(|e| e.into_inner()).show_cursor;
-    if let Some(win) = app.get_webview_window("overlay") {
-        let _ = win.hide();
-    }
-    if let Some(editor) = app.get_webview_window("editor") {
-        let _ = editor.hide();
-    }
+    hide_for_capture(&app);
     let path = capture::capture_fullscreen(show_cursor).await?;
-    let (b64, w, h) = capture::load_as_base64(&path)?;
-    open_editor_with_image(&app, b64, w, h);
-    Ok(())
+    finish_capture(&app, &path)
 }
 
 #[tauri::command]
@@ -113,16 +123,9 @@ async fn get_window_list() -> Vec<capture::WindowInfo> {
 #[tauri::command]
 async fn capture_window_by_id(app: AppHandle, state: State<'_, AppState>, window_id: u32) -> Result<(), String> {
     let show_cursor = state.settings.lock().unwrap_or_else(|e| e.into_inner()).show_cursor;
-    if let Some(win) = app.get_webview_window("overlay") {
-        let _ = win.hide();
-    }
-    if let Some(editor) = app.get_webview_window("editor") {
-        let _ = editor.hide();
-    }
+    hide_for_capture(&app);
     let path = capture::capture_window_by_id(window_id, show_cursor).await?;
-    let (b64, w, h) = capture::load_as_base64(&path)?;
-    open_editor_with_image(&app, b64, w, h);
-    Ok(())
+    finish_capture(&app, &path)
 }
 
 #[tauri::command]
@@ -138,7 +141,7 @@ async fn copy_to_clipboard(_app: AppHandle, base64_data: String, ext: String) ->
     )
     .map_err(|e| format!("base64 decode error: {}", e))?;
 
-    let tmp = std::env::temp_dir().join(format!("simpleshot_export.{}", ext));
+    let tmp = std::env::temp_dir().join(format!("pashatt_export.{}", ext));
     std::fs::write(&tmp, bytes).map_err(|e| e.to_string())?;
     capture::copy_image_to_clipboard(&tmp)
 }
@@ -160,8 +163,9 @@ fn check_accessibility_permission() -> bool {
 
 #[tauri::command]
 fn open_system_preferences(_app: AppHandle) {
+    // macOS 13+ System Settings URL（旧 Security ペイン URL は Sequoia 以降で届かないことがある）
     let _ = std::process::Command::new("open")
-        .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")
+        .arg("x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_ScreenCapture")
         .spawn();
 }
 
@@ -232,17 +236,28 @@ fn fit_overlay_to_screen(app: &AppHandle, win: &tauri::WebviewWindow) {
     }
 }
 
-/// 統合オーバーレイを表示する
-pub async fn trigger_capture(app: &AppHandle) {
-    // エディタが表示中なら隠す（スクショに写り込み防止）
-    if let Some(editor) = app.get_webview_window("editor") {
-        let _ = editor.hide();
+/// オーバーレイを前面に出し、キー入力を受け取れる状態にする
+fn show_overlay_window(app: &AppHandle) {
+    // Accessory のままだと最初のクリックがアクティベート専用で消費されがち。
+    // 一時的に Regular にしてフォーカスを確実に取る。
+    #[cfg(target_os = "macos")]
+    {
+        let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
     }
     if let Some(win) = app.get_webview_window("overlay") {
         fit_overlay_to_screen(app, &win);
         let _ = win.show();
         let _ = win.set_focus();
     }
+}
+
+/// 統合オーバーレイを表示する
+pub async fn trigger_capture(app: &AppHandle) {
+    // エディタが表示中なら隠す（スクショに写り込み防止）
+    if let Some(editor) = app.get_webview_window("editor") {
+        let _ = editor.hide();
+    }
+    show_overlay_window(app);
 }
 
 pub fn show_settings_window(app: &AppHandle) {
@@ -285,7 +300,7 @@ pub fn run() {
             }
 
             // タイトルバーにバージョンを表示（設定・エディタ）
-            let titled = format!("SimpleSHOT {}", env!("CARGO_PKG_VERSION"));
+            let titled = format!("Pashatt {}", env!("CARGO_PKG_VERSION"));
             for label in ["settings", "editor"] {
                 if let Some(win) = app.get_webview_window(label) {
                     let _ = win.set_title(&titled);

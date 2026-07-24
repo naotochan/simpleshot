@@ -8,6 +8,7 @@ import { SizeControl } from "./SizeControl";
 import { HistoryButtons } from "./HistoryButtons";
 import { ActionButtons } from "./ActionButtons";
 import { BackgroundControls } from "./BackgroundControls";
+import { useLocalization } from "../../lib/localization";
 
 export type { Tool, AnnotationColor, ArrowStyle } from "../../types/annotation";
 export type { BackgroundState };
@@ -89,6 +90,7 @@ const Toolbar = memo(function Toolbar({
   onCopy,
   onSave,
 }: ToolbarProps) {
+  const { t } = useLocalization();
   return (
     <div className="bg-tb-base border-b border-tb-border select-none">
       {/* メインツールバー — 幅超過時は横スクロール */}
@@ -136,9 +138,9 @@ const Toolbar = memo(function Toolbar({
           <button
             onClick={crop.onRevert}
             className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-tb-warning hover:bg-tb-warning/10 transition-all duration-150 flex-shrink-0"
-            title="トリミングを元に戻す"
+            title={t("Revert crop", "トリミングを元に戻す")}
           >
-            トリミング復元
+            {t("Revert Crop", "トリミング復元")}
           </button>
         )}
 

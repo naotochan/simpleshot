@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Hardened Runtime 下で画面キャプチャ API / screencapture 子プロセスが黒画像になるのを防ぐ -->
+	<key>com.apple.security.device.screen-capture</key>
+	<true/>
+</dict>
+</plist>

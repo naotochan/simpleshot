@@ -9,7 +9,7 @@ pub struct HotkeyConfig {
 impl Default for HotkeyConfig {
     fn default() -> Self {
         Self {
-            screenshot: "CmdOrCtrl+Shift+Space".to_string(),
+            screenshot: "Command+Shift+Space".to_string(),
         }
     }
 }
@@ -22,6 +22,20 @@ pub struct AppSettings {
     pub show_cursor: bool,
     #[serde(default)]
     pub favorite_colors: Vec<String>,
+    /// "system" | "english" | "japanese"
+    #[serde(default = "default_app_language")]
+    pub app_language: String,
+    /// "system" | "light" | "dark"
+    #[serde(default = "default_app_appearance")]
+    pub app_appearance: String,
+}
+
+fn default_app_language() -> String {
+    "system".to_string()
+}
+
+fn default_app_appearance() -> String {
+    "system".to_string()
 }
 
 impl Default for AppSettings {
@@ -35,16 +49,33 @@ impl Default for AppSettings {
             image_format: "png".to_string(),
             show_cursor: false,
             favorite_colors: vec![],
+            app_language: default_app_language(),
+            app_appearance: default_app_appearance(),
         }
     }
 }
 
+fn config_dir() -> PathBuf {
+    let base = dirs_next::config_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
+    let new_dir = base.join("pashatt");
+    let legacy_dir = base.join("simpleshot");
+
+    // One-time migration from SimpleSHOT → Pashatt
+    if !new_dir.exists() {
+        let legacy_settings = legacy_dir.join("settings.json");
+        if legacy_settings.is_file() {
+            if std::fs::create_dir_all(&new_dir).is_ok() {
+                let _ = std::fs::copy(&legacy_settings, new_dir.join("settings.json"));
+            }
+        }
+    }
+
+    std::fs::create_dir_all(&new_dir).ok();
+    new_dir
+}
+
 fn config_path() -> PathBuf {
-    let config_dir = dirs_next::config_dir()
-        .unwrap_or_else(|| PathBuf::from("/tmp"))
-        .join("simpleshot");
-    std::fs::create_dir_all(&config_dir).ok();
-    config_dir.join("settings.json")
+    config_dir().join("settings.json")
 }
 
 pub fn load_settings() -> AppSettings {

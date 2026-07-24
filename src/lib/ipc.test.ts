@@ -23,6 +23,8 @@ describe("ipc", () => {
       image_format: "png",
       show_cursor: false,
       favorite_colors: [],
+      app_language: "system",
+      app_appearance: "system",
     };
     vi.mocked(invoke).mockResolvedValue(settings);
 

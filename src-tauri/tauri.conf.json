@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "SimpleSHOT",
-  "version": "0.0.48",
-  "identifier": "com.bookair.simpleshot",
+  "productName": "Pashatt",
+  "version": "0.1.1",
+  "identifier": "com.bookair.pashatt",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -14,9 +14,9 @@
     "windows": [
       {
         "label": "settings",
-        "title": "SimpleSHOT",
+        "title": "Pashatt",
         "url": "/?view=settings",
-        "width": 600,
+        "width": 760,
         "height": 520,
         "visible": false,
         "resizable": false,
@@ -40,7 +40,7 @@
       {
         "label": "editor",
         "url": "/?view=editor",
-        "title": "SimpleSHOT",
+        "title": "Pashatt",
         "width": 1280,
         "height": 800,
         "visible": false,
@@ -63,11 +63,12 @@
       "icons/icon.ico"
     ],
     "macOS": {
-      "entitlements": null,
+      "entitlements": "entitlements.plist",
       "exceptionDomain": "",
       "frameworks": [],
       "providerShortName": null,
-      "signingIdentity": "SimpleSHOT Dev"
+      "signingIdentity": "Apple Development: naoto.k70@gmail.com (S27SCJ956H)",
+      "hardenedRuntime": true
     }
   }
 }

@@ -6,6 +6,7 @@ import {
   ShapeFilledIcon,
 } from "./icons";
 import { BTN_DEFAULT, BTN_SELECTED } from "./styles";
+import { useLocalization } from "../../lib/localization";
 
 interface StyleOptionsProps {
   tool: Tool;
@@ -28,18 +29,22 @@ export function StyleOptions({
   onCropApply,
   onCropCancel,
 }: StyleOptionsProps) {
+  const { t } = useLocalization();
+
   if (tool === "arrow") {
     return (
       <div className="tool-group">
         <button
-          title="均一な太さ"
+          title={t("Uniform stroke", "均一な太さ")}
+          aria-label={t("Uniform stroke", "均一な太さ")}
           onClick={() => onArrowStyleChange("uniform")}
           className={arrowStyle === "uniform" ? BTN_SELECTED : BTN_DEFAULT}
         >
           <UniformArrowIcon />
         </button>
         <button
-          title="テーパー"
+          title={t("Tapered", "テーパー")}
+          aria-label={t("Tapered", "テーパー")}
           onClick={() => onArrowStyleChange("tapered")}
           className={arrowStyle === "tapered" ? BTN_SELECTED : BTN_DEFAULT}
         >
@@ -53,14 +58,16 @@ export function StyleOptions({
     return (
       <div className="tool-group">
         <button
-          title="枠線のみ"
+          title={t("Outline", "枠線のみ")}
+          aria-label={t("Outline", "枠線のみ")}
           onClick={() => onShapeFilledChange(false)}
           className={!shapeFilled ? BTN_SELECTED : BTN_DEFAULT}
         >
           <ShapeOutlineIcon />
         </button>
         <button
-          title="塗りつぶし"
+          title={t("Filled", "塗りつぶし")}
+          aria-label={t("Filled", "塗りつぶし")}
           onClick={() => onShapeFilledChange(true)}
           className={shapeFilled ? BTN_SELECTED : BTN_DEFAULT}
         >
@@ -78,13 +85,13 @@ export function StyleOptions({
           onClick={onCropApply}
           className="h-8 px-3 rounded-lg text-xs font-semibold bg-tb-success/20 text-tb-success hover:bg-tb-success/30 transition-all duration-150 disabled:opacity-30"
         >
-          適用
+          {t("Apply", "適用")}
         </button>
         <button
           onClick={onCropCancel}
           className="h-8 px-3 rounded-lg text-xs font-medium text-tb-text-sub hover:bg-tb-hover transition-all duration-150"
         >
-          キャンセル
+          {t("Cancel", "キャンセル")}
         </button>
       </div>
     );

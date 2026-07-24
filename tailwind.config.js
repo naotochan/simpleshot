@@ -4,21 +4,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        accent: "#007AFF",
+        accent: "rgb(var(--tb-selected) / <alpha-value>)",
         tb: {
-          base: "#13141A",
-          raised: "#1C1D27",
-          hover: "#262836",
-          active: "#2E3145",
-          border: "#2A2C3A",
-          text: "#E8E9ED",
-          "text-sub": "#8B8FA3",
-          "text-dim": "#5C6078",
-          canvas: "#0F1015",
-          /* semantic tokens */
-          selected: "#3B82F6",
-          success: "#10B981",
-          warning: "#FB923C",
+          base: "rgb(var(--tb-base) / <alpha-value>)",
+          raised: "rgb(var(--tb-raised) / <alpha-value>)",
+          hover: "rgb(var(--tb-hover) / <alpha-value>)",
+          active: "rgb(var(--tb-active) / <alpha-value>)",
+          border: "rgb(var(--tb-border) / <alpha-value>)",
+          text: "rgb(var(--tb-text) / <alpha-value>)",
+          "text-sub": "rgb(var(--tb-text-sub) / <alpha-value>)",
+          "text-dim": "rgb(var(--tb-text-dim) / <alpha-value>)",
+          canvas: "rgb(var(--tb-canvas) / <alpha-value>)",
+          selected: "rgb(var(--tb-selected) / <alpha-value>)",
+          success: "rgb(var(--tb-success) / <alpha-value>)",
+          warning: "rgb(var(--tb-warning) / <alpha-value>)",
+          danger: "rgb(var(--tb-danger) / <alpha-value>)",
         },
       },
       fontFamily: {
