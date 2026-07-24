@@ -18,6 +18,17 @@ interface DragState {
   endY: number;
 }
 
+/**
+ * macOS の transparent NSWindow は alpha≈0 の画素をクリックスルーする。
+ * clearRect の代わりに極小 alpha で塗り、見た目は通しつつヒットを確保する。
+ */
+const HIT_CUTOUT = "rgba(0, 0, 0, 0.01)";
+
+function cutOut(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+  ctx.fillStyle = HIT_CUTOUT;
+  ctx.fillRect(x, y, w, h);
+}
+
 function hitTestFrontmost(
   windows: WindowInfo[],
   cx: number,
@@ -98,7 +109,7 @@ export default function Overlay() {
         const w = Math.abs(drag.endX - drag.startX);
         const h = Math.abs(drag.endY - drag.startY);
 
-        ctx.clearRect(x, y, w, h);
+        cutOut(ctx, x, y, w, h);
 
         ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
         ctx.lineWidth = 1.5;
@@ -130,7 +141,7 @@ export default function Overlay() {
 
       if (win) {
         const { x, y, w, h } = win;
-        ctx.clearRect(x, y, w, h);
+        cutOut(ctx, x, y, w, h);
 
         const wins = windowsRef.current;
         const idx = wins.findIndex((winfo) => winfo.id === win.id);
